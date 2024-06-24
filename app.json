@@ -3,6 +3,7 @@
     "name": "teletherapy-app",
     "slug": "teletherapy-app",
     "version": "1.0.0",
+    "permissions": ["CAMERA_ROLL"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

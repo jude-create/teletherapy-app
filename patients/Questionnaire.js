@@ -27,11 +27,11 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
       };
     
     return (
-        <View className="space-y-5 p-2">
+        <View className="space-y-5 p-2 flex-col items-center justify-center">
       <Text className="font-bold text-lg ">What type of therapy are you looking for?</Text>
       {options.map((option) => (
         <TouchableOpacity
-        className="justify-center items-center border border-blue-500 bg-blue-500  rounded-md h-12 w-[360px]"
+        className="justify-center items-center border border-blue-500 bg-blue-500  rounded-full h-14 w-[360px]"
           key={option.id}
           style={[
             selectedOption === option.text ? styles.selectedOption : null,
@@ -60,11 +60,11 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
         updateUserData(); 
       };
     return (
-        <View className="space-y-5 p-2">
+        <View className="space-y-5 p-2 flex-col items-center justify-center">
         <Text className="font-bold text-lg ">What is your gender identity?</Text>
         {options.map((option) => (
           <TouchableOpacity
-          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-3xl  h-12 w-[360px]"
+          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-full  h-14 w-[360px]"
             key={option.id}
             style={[
               selected === option.text ? styles.selectedOption : null,
@@ -95,11 +95,11 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
         updateUserData(); 
       };
     return (
-        <View className="space-y-5 p-2">
+        <View className="space-y-5 p-2 flex-col items-center justify-center">
         <Text className="font-bold text-lg ">What is your relationship status?</Text>
         {options.map((option) => (
           <TouchableOpacity
-          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-3xl  h-12 w-[360px]"
+          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-full  h-14 w-[360px]"
             key={option.id}
             style={[
               selectedOption2 === option.text ? styles.selectedOption : null,
@@ -127,7 +127,7 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
     };
   
     return (
-      <View className=" p-2">
+      <View className=" p-2 ">
         <Text className="font-bold text-lg text-center pb-2">Therapist preferences:</Text>
         <CheckBox
           title="Male therapist"
@@ -229,7 +229,7 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
         />
         <TouchableOpacity
           onPress={()=> navigation.navigate('PatientDrawer')}
-         className="justify-center items-center mb-10  border-2 border-gray-500 bg-blue-500  rounded-md h-10 w-[360px] mt-1">
+         className="justify-center items-center mb-10 mt-4 h-14 bg-blue-600  rounded-full  w-[360px] mx-auto ">
           <Text>Submit</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -238,127 +238,101 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
 
  
 
-const Questionnaire = () => {
+  
+  
+  const Questionnaire = () => {
     const [activeComponent, setActiveComponent] = useState(1);
     const [selectedOption, setSelectedOption] = useState();
     const [selected, setSelected] = useState();
     const [selectedOption2, setSelectedOption2] = useState();
     const [selectedBox, setSelectedBox] = useState([]);
     const [selectedBox2, setSelectedBox2] = useState([]);
-    
-    
+  
+    const [message, setMessage] = useState(""); // Success or error message
+    const [messageType, setMessageType] = useState(""); // "success" or "error"
+  
     const updateUserData = async () => {
       try {
         const currentUser = auth.currentUser;
-
         if (!currentUser) {
-          console.warn('No authenticated user');
+          setMessage("No authenticated user");
+          setMessageType("error");
           return;
         }
-        
+  
         const userId = currentUser.uid;
-        console.log(userId);
         const userDocRef = doc(db, "patients", userId);
-        
-        // Update the user document with the selected options
-     
-        
-       
-
+  
         const updateData = {};
-    if (selectedOption) updateData.selectedOption = selectedOption;
-    if (selected) updateData.gender = selected;
-    if (selectedOption2) updateData.relationshipStatus = selectedOption2;
-    if (selectedBox.length > 0) updateData.therapistPreferences = selectedBox;
-    if (selectedBox2.length > 0) updateData.therapistExperience = selectedBox2;
-     
-        // Update the user document with the selected options
-        await updateDoc(userDocRef, updateData, {merge: true});
-    
-        console.log('User data updated successfully');
-        
+        if (selectedOption) updateData.selectedOption = selectedOption;
+        if (selected) updateData.gender = selected;
+        if (selectedOption2) updateData.relationshipStatus = selectedOption2;
+        if (selectedBox.length > 0) updateData.therapistPreferences = selectedBox;
+        if (selectedBox2.length > 0) updateData.therapistExperience = selectedBox2;
+  
+        await updateDoc(userDocRef, updateData, { merge: true });
+  
+        setMessage("User data updated successfully!");
+        setMessageType("success");
       } catch (error) {
-        console.error('Error updating user data:', error);
+        setMessage(`Error updating user data: ${error.message}`);
+        setMessageType("error");
       }
     };
-    
-
+  
     const components = {
-      1: <ComponentOne
-      selectedOption={selectedOption}
-      setSelectedOption={setSelectedOption}
-      updateUserData={updateUserData}
-      />,
-      2: <ComponentTwo 
-      selected={selected}
-      setSelected={setSelected}
-      updateUserData={updateUserData}
-      />,
-      3: <ComponentThree 
-      selectedOption2={selectedOption2}
-      setSelectedOption2={setSelectedOption2}
-      updateUserData={updateUserData}
-      />,
-      4: <ComponentFour 
-      selectedBox={selectedBox}
-      setSelectedBox={setSelectedBox}
-      updateUserData={updateUserData}
-      />,
-      5: <ComponentFive 
-      selectedBox2={selectedBox2}
-      setSelectedBox2={setSelectedBox2}
-      updateUserData={updateUserData}
-      />,
-     
-      // Add ComponentThree through ComponentSeven...
+      1: <ComponentOne selectedOption={selectedOption} setSelectedOption={setSelectedOption} updateUserData={updateUserData} />,
+      2: <ComponentTwo selected={selected} setSelected={setSelected} updateUserData={updateUserData} />,
+      3: <ComponentThree selectedOption2={selectedOption2} setSelectedOption2={setSelectedOption2} updateUserData={updateUserData} />,
+      4: <ComponentFour selectedBox={selectedBox} setSelectedBox={setSelectedBox} updateUserData={updateUserData} />,
+      5: <ComponentFive selectedBox2={selectedBox2} setSelectedBox2={setSelectedBox2} updateUserData={updateUserData} />,
     };
   
-    const switchComponent = (componentNumber) => {
-      setActiveComponent  (componentNumber);
-    }
-   
-  return (
-    <SafeAreaView  className="flex-1 relative  bg-zinc-200  ">
-        <View className="border-1 border-blue-500 bg-header h-[130px] flex-row  gap-14">
-    <View className="flex-row  pt-3 px-2">
-         <SparklesIcon size={40} color="#f5f5dc" />
-         <Text className="font-bold uppercase text-yellow-50 tracking-[5px] pt-3 text-lg">
-            VirtualMindSpace
-         </Text>
-       </View>
-    </View>
-
-    <View className="pt-6">
-        {components[activeComponent]}
-        <View className="flex-row gap-6 items-end mt-2 p-2 px-8">
-          {[1, 2, 3, 4, 5].map((componentNumber) => (
-            <TouchableOpacity
-              key={componentNumber}
-              className={`border-4 border-gray-500 w-12 h-3 ${
-                activeComponent === componentNumber ? 'bg-blue-600' : ''
-              }`}
-              onPress={() => switchComponent(componentNumber)}
-            ></TouchableOpacity>
-          ))}
+    return (
+      <SafeAreaView className="flex-1 bg-zinc-200">
+        {/* Header */}
+        <View className="border-1 border-blue-500 bg-blue-600 h-[130px] flex-row  gap-14">
+        <View className="flex-row  pt-3 px-2 items-center">
+          <SparklesIcon size={40} color="#f5f5dc" />
+          <Text className="font-bold uppercase text-yellow-50 text-lg">VirtualMindSpace</Text>
         </View>
-      </View>
-      <View>
-        <Image className="w-full h-72 mt-10" source={require('../assets/lesly.jpg')} />
-      </View>
-    </SafeAreaView>
-  );
-};
+        </View>
+  
+        {/* Success or Error Message */}
+        {message && (
+          <View className={`p-4 mx-4 my-2 rounded-lg ${messageType === "success" ? "bg-green-500" : "bg-red-500"}`}>
+            <Text className="text-white font-semibold">{message}</Text>
+          </View>
+        )}
+  
+        {/* Component Switching */}
+        <View className=" flex-1  justify-center">
+          {components[activeComponent]}
+          <View className="flex-row gap-6 items-end mt-2 p-2 px-8">
+            {[1, 2, 3, 4, 5].map((componentNumber) => (
+              <TouchableOpacity
+                key={componentNumber}
+                className={`border-4 border-gray-500 w-12 h-3 ${activeComponent === componentNumber ? 'bg-blue-600' : ''}`}
+                onPress={() => setActiveComponent(componentNumber)}
+              />
+            ))}
+          </View>
+        </View>
+  
+       
+      </SafeAreaView>
+    );
+  };
 
+ 
 
 const styles = StyleSheet.create({
-   
-    selectedOption: {
-       
-      backgroundColor: 'green',
-    },
-    'active-component': {
-      borderColor: 'blue' // Change this to the highlight color you want
-    },
-    
-  });
-export default Questionnaire
+  selectedOption: {
+    borderColor: 'white',
+    backgroundColor: 'darkblue',
+  },
+});
+
+  
+  export default Questionnaire;
+  

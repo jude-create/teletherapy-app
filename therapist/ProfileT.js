@@ -1,196 +1,155 @@
-import { View, Text, ScrollView } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { CameraIcon } from "react-native-heroicons/solid"; 
-import { Image } from 'react-native'
 import { auth, db } from '../config/firebase';
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, setDoc, doc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from "@react-navigation/native";
-
 
 const ProfileT = () => {
   const navigation = useNavigation();
   const [userData, setUserData] = useState(null);
   const [selectedImageUri, setSelectedImageUri] = useState(null);
-const [imageChanged, setImageChanged] = useState(false);
+  const [imageChanged, setImageChanged] = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access media library is required!');
+      }
+    })();
+  }, []);
 
-  
-useEffect(() => {
-  (async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access media library is required!');
-    }
-  })();
-}, []);
-
-const pickImage = async () => {
-  try {
-    const currentUser = auth.currentUser;
-
+  const pickImage = async () => {
+    try {
+      const currentUser = auth.currentUser;
       if (!currentUser) {
         console.warn('No authenticated user');
         return;
       }
-      
-      const userId = currentUser.uid;
 
-    const updatedUserData = {
-      // ... existing data ...
-      profileImage: selectedImageUri,
-    };
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-    // Update the user data in the database with the new image URI
-    await setDoc(doc(db, 'patients', userId), updatedUserData, { merge: true });
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri;
+        setSelectedImageUri(imageUri);
+        setImageChanged(true);
 
-    // ... rest of the logic ...
-  } catch (error) {
-    console.error('Error updating user data:', error.message);
-  }
-  
-  let result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 1,
-  });
+        const userId = currentUser.uid;
+        await setDoc(doc(db, 'therapists', userId), { profileImage: imageUri }, { merge: true });
+      }
+    } catch (error) {
+      console.error('Error updating user data:', error.message);
+    }
+  };
 
- 
-    // The user picked an image, you can use 'result.uri' to access the image URI.
-    setSelectedImageUri(result?.assets[0]?.uri);
-  setImageChanged(true);
-    console.log(result.uri);
-    // Handle the selected image URI as needed.
-  
-};
-
-  
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const currentUser = auth.currentUser;
-    
         if (!currentUser) {
           console.warn('No authenticated user');
           return;
         }
-    
+
         const therapistsCollectionRef = collection(db, 'therapists');
         const q = query(therapistsCollectionRef, where('email', '==', currentUser.email));
         const querySnapshot = await getDocs(q);
-    
-        if (querySnapshot.size > 0) {
-          const userData = querySnapshot.docs[0].data();
-          setUserData(userData);
-          
+
+        if (!querySnapshot.empty) {
+          setUserData(querySnapshot.docs[0].data());
         } else {
           console.warn('No user data found for the authenticated user');
         }
-        console.log(userData);
       } catch (error) {
         console.error('Error fetching user data:', error.message);
       }
     };
     fetchUserData();
-  }, []);  
+  }, []);
 
-  
-
-  
   return (
-    <ScrollView 
-      centerContent
-    className="flex-1  space-y-5  rounded-2xl w-[400px]  m-auto shadow-lg shadow-black">
-    <View className=" justify-center items-center relative">
-     
-      <Image className="h-36 w-36 border rounded-full" 
-       source= {imageChanged ? { uri: selectedImageUri } : require('../assets/minh.jpg')} />
-       <TouchableOpacity 
-       onPress={ pickImage}
-       className="absolute top-24 right-[119px]">
-      <CameraIcon size={38} color="#0A75AD" />
-     </TouchableOpacity>
-    </View>
-   
- <View className="space-y-6 items-center">
- {userData && (
-      <React.Fragment >
-   <View className="space-y-4 items-center">
-    <View>
-      <Text className="text-xl font-bold">{userData.name}</Text>
-     
-    </View>
+    <ScrollView className="flex-1 bg-gray-100 p-5 rounded-2xl w-[400px] m-auto shadow-md">
+      {/* Profile Image Section */}
+      <View className="justify-center items-center relative">
+        <Image
+          className="h-36 w-36 border-4 border-gray-300 rounded-full shadow-md"
+          source={imageChanged ? { uri: selectedImageUri } : require('../assets/minh.jpg')}
+        />
+        <TouchableOpacity onPress={pickImage} className="absolute top-24 right-[115px] bg-white p-2 rounded-full shadow-md">
+          <CameraIcon size={38} color="#0A75AD" />
+        </TouchableOpacity>
+      </View>
 
-  <Text className="text-base font-bold">{userData.email}</Text>
+      {/* User Info */}
+      {userData && (
+        <View className="mt-5 space-y-4 items-center">
+          <Text className="text-2xl font-bold text-gray-900">{userData.name}</Text>
+          <Text className="text-lg font-semibold text-gray-600">{userData.email}</Text>
 
-  <View className="flex-row space-x-10">
-    <Text className="text-base">{`Phone: ${userData.phone}`}</Text>
-    <Text className="text-base">{`Age: ${userData.age}`}</Text>
-  </View>
+          <View className="flex-row space-x-10">
+            <Text className="text-lg">{`📞 ${userData.phone}`}</Text>
+            <Text className="text-lg">{`🎂 Age: ${userData.age}`}</Text>
+          </View>
 
-  <View>
-     <Text className="text-base">{`License no: ${userData.license}`}</Text>
-   </View>
+          <Text className="text-lg">{`🆔 License No: ${userData.license}`}</Text>
 
- 
+          <View className="w-96 bg-white p-3 rounded-md shadow-md">
+            <Text className="text-base text-gray-800">{userData.text}</Text>
+          </View>
 
-  <View className=" w-64">
-    <Text className="text-base">{userData.text}</Text>
-  </View>
-
-  <View className="flex-row space-x-8 mb-2 mt-4">
-   <View className="space-y-2">
-     <Text className="text-base text-blue-500"> My Specialities:</Text>
-     {userData.therapistExperiences && userData.therapistExperiences.map((experience, index) => (
-        <Text key={index} className="text-sm">{experience}</Text> 
-        ))}
-   </View>
-
-   <View>
-   <Text className="text-base text-blue-500">My Profile </Text>
-   {userData.therapistProfile && userData.therapistProfile.map((profile, index) => (
-        <Text key={index} className="text-sm">{profile}</Text> 
-        ))}
-  </View>
-
-  </View>
-
-<View className="flex-row space-x-16 mb-4 ">
-  <View>
-    <Text className="text-base text-blue-500">Type of therapy:</Text>
-    {userData.selectedOption && userData.selectedOption.map((preference, index) => (
-        <Text key={index} className="text-sm">{preference}</Text> 
-        ))}
-      
-  </View>
-    
-    <View>
-      <Text className="text-base text-blue-500">Appointment Days:</Text>
-      {Object.entries(userData.selectedDays).map(([day, selected]) => (
-                selected && <Text key={day} className="text-sm">{day}</Text>
+          {/* Specialities & Profile */}
+          <View className="flex-row space-x-8 w-full justify-center">
+            <View>
+              <Text className="text-lg font-semibold text-blue-500">🛠️ My Specialities:</Text>
+              {userData.therapistExperiences?.map((exp, index) => (
+                <Text key={index} className="text-sm text-gray-700">• {exp}</Text>
               ))}
-      <Text>{`Time: ${userData.time}`}</Text>
-      
-    </View>
-  </View>
+            </View>
 
-  </View>
-  </React.Fragment>
-    )}
-    
-    <TouchableOpacity
-    onPress={() => navigation.navigate("Auth", {screen: "SignUpT"})}
-    className="justify-center items-center border-2 border-gray-500 bg-blue-500  rounded-md h-10 w-[100px] mx-5 mb-4 "
-    >
-        <Text>Edit Profile</Text>
-    </TouchableOpacity>
-  
-  </View>
-  
- </ScrollView>
-  )
-}
+            <View>
+              <Text className="text-lg font-semibold text-blue-500">📌 My Profile:</Text>
+              {userData.therapistProfile?.map((profile, index) => (
+                <Text key={index} className="text-sm text-gray-700">• {profile}</Text>
+              ))}
+            </View>
+          </View>
 
-export default ProfileT
+          {/* Therapy Type & Appointment Days */}
+          <View className="flex-row space-x-12 w-full justify-center">
+            <View>
+              <Text className="text-lg font-semibold text-blue-500">🧠 Therapy Type:</Text>
+              {userData.selectedOption?.map((therapy, index) => (
+                <Text key={index} className="text-sm text-gray-700">• {therapy}</Text>
+              ))}
+            </View>
+
+            <View>
+              <Text className="text-lg font-semibold text-blue-500">📅 Appointment Days:</Text>
+              {Object.entries(userData.selectedDays || {}).map(([day, selected]) =>
+                selected ? <Text key={day} className="text-sm text-gray-700">• {day}</Text> : null
+              )}
+              <Text className="text-sm text-gray-700">{`⏰ Time: ${userData.time}`}</Text>
+            </View>
+          </View>
+
+          {/* Edit Profile Button */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Auth", { screen: "SignUpT" })}
+            className="mt-5 bg-blue-600 py-3 px-8 rounded-lg shadow-md mb-9"
+          >
+            <Text className="text-lg font-semibold text-white">Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+};
+
+export default ProfileT;

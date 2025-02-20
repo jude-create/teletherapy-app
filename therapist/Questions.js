@@ -31,8 +31,8 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
       
     
     return (
-        <View className=" p-2">
-        <Text className="font-bold text-lg text-center pb-2">What type of therapy do you offer</Text>
+        <View className=" p-2 ">
+        <Text className="font-bold text-lg text-center pb-10">What type of therapy do you offer</Text>
         <CheckBox
           title="Individual"
           checked={selectedOption.includes('Individual')}
@@ -73,7 +73,7 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
   
     return (
       <View className=" p-2">
-        <Text className="font-bold text-lg text-center pb-2">Therapist Profile:</Text>
+        <Text className="font-bold text-lg text-center pb-10">Therapist Profile:</Text>
         <CheckBox
           title="Male therapist"
           checked={selectedBox.includes('Male therapist')}
@@ -174,7 +174,7 @@ const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => 
         />
         <TouchableOpacity
           onPress={() => navigation.navigate("TherapistDrawer")}
-         className="justify-center items-center border-2 border-gray-500 bg-blue-500  rounded-md h-10 w-[360px] mt-2">
+         className="justify-center items-center  bg-blue-500  rounded-full h-14  mt-2">
           <Text>Submit</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -213,7 +213,7 @@ const Questions = () => {
         // Update the user document with the selected options
         await updateDoc(userDocRef, updateData, {merge: true});
     
-        console.log('User data updated successfully');
+       // console.log('User data updated successfully');
         
       } catch (error) {
         console.error('Error updating user data:', error);
@@ -258,9 +258,9 @@ const Questions = () => {
        </View>
     </View>
 
-    <View className="pt-6">
+    <View className=" flex-1 justify-center ">
         {components[activeComponent]}
-        <View className="flex-row space-x-12 items-end mt-2 p-2 px-20">
+        <View className="flex-row space-x-12 items-end mt-2 p-2 px-20 ">
           {[1, 2, 3].map((componentNumber) => (
             <TouchableOpacity
               key={componentNumber}
@@ -272,9 +272,7 @@ const Questions = () => {
           ))}
         </View>
       </View>
-      <View>
-        <Image className="w-full h-72 mt-10" source={require('../assets/lesly.jpg')} />
-      </View>
+     
     </SafeAreaView>
   );
   };

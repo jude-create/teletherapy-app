@@ -1,114 +1,133 @@
-import { View, Text, TextInput, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState }from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
-import {  ArrowSmallLeftIcon } from 'react-native-heroicons/solid';
-import {  SafeAreaView } from "react-native-safe-area-context";
+import { ArrowSmallLeftIcon } from 'react-native-heroicons/solid';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { StatusBar } from 'expo-status-bar';
 import { auth } from '../config/firebase';
-
-
+import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
 
 const LogInScreen = () => {
-  
-    const navigation = useNavigation();
-   const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const navigation = useNavigation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false); // Add loading state
 
-    React.useLayoutEffect(() => {
-        navigation.setOptions({
-          headerShown: false,
-        });
-      }, []);
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, []);
 
-      const handleSignIn = async () => {
-        try {
-          // Sign in with email and password
-          await signInWithEmailAndPassword(auth, email, password);
-    
-          // Navigate to the desired screen after successful sign-in
-          // Replace "PatientDrawer" with the screen you want to navigate to
-          navigation.navigate('PatientDrawer');
-        } catch (error) {
-          console.error('Error signing in:', error.message);
-          // Handle authentication errors (e.g., display an error message to the user)
-        }
-      };
-     
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      setErrorMessage("Please input details");
+      return;
+    }
 
-      
+    setLoading(true); // Start loading
+    setErrorMessage(""); // Clear any previous error messages
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigation.navigate('PatientDrawer'); // Navigate to PatientDrawer on success
+    } catch (error) {
+      setErrorMessage("Invalid email or password");
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  };
+
+  // Show LoadingOverlay if loading is true
+  if (loading) {
+    return <LoadingOverlay message="Logging in..." />;
+  }
+
   return (
-    <SafeAreaView className="flex-1 relative pt-10 bg-zinc-200 space-y-1">
-    <TouchableOpacity
-     onPress={() => navigation.navigate("Home")}
-     className="px-3">
-    <ArrowSmallLeftIcon size={40}  color="#000000"/>
-    </TouchableOpacity>
-    
-        <View className="p-6">
-            <Text className="font-extrabold text-3xl tracking-[2px] text-slate-500">
-            Sign In
-            </Text>
-        </View>
+    <SafeAreaView className="flex-1 bg-zinc-200">
+      <StatusBar style="dark" />
 
-        <View className="px-3 space-y-6">
+      {/* Back Button */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Home")}
+        className="px-3 pt-4"
+      >
+        <ArrowSmallLeftIcon size={40} color="#000000" />
+      </TouchableOpacity>
+
+      {/* Header */}
+      <View className="p-6">
+        <Text className="font-extrabold text-2xl tracking-[2px] text-slate-500">
+          Sign In
+        </Text>
+      </View>
+
+      {/* Input Fields */}
+      <View className="px-6 space-y-7">
         <TextInput
-            className="border-2 h-14  border-gray-500 rounded-md p-2 "
-            keyboardType="default"
-            placeholder="Enter your email address here"
-            type="email"
-            autoFocus
-            value={email}
-            onChangeText={(text) => setEmail(text)}
-            
-          />
-           <TextInput
-            className="border-2 h-14  border-gray-500 rounded-md p-2"
-            placeholder="Enter your password"
-            keyboardType="default"
-            type="password"
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-            secureTextEntry={true}
-          />
-        </View>
+          className="border-2 h-14 border-gray-500 rounded-xl p-4"
+          placeholder="Enter your email address"
+          keyboardType="email-address"
+          autoFocus
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            setErrorMessage(""); // Clear error message when typing
+          }}
+        />
+        <TextInput
+          className="border-2 h-14 border-gray-500 rounded-xl p-4"
+          placeholder="Enter your password"
+          secureTextEntry
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            setErrorMessage(""); // Clear error message when typing
+          }}
+        />
+      </View>
 
-        <View className="flex-row gap-1 p-2">
-            <Text>
-                Don't have an account? 
-            </Text>
+      {/* Error Message */}
+      {errorMessage ? (
+        <Text className="text-red-500 text-sm px-6 mt-2">{errorMessage}</Text>
+      ) : null}
+
+      {/* Create Account Link */}
+      <View className="flex-row gap-1 px-6 pt-2">
+        <Text>Don't have an account?</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Auth", { screen: "Register" })}
+        >
+          <Text className="text-blue-700 underline text-sm">
+            Create an account
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom Section */}
+      <View className="flex-1 justify-end pb-5 px-6">
+        <TouchableOpacity
+          onPress={handleSignIn}
+          className="justify-center items-center bg-blue-500 rounded-full h-14"
+        >
+          <Text className="text-white text-lg font-semibold">Sign In</Text>
+        </TouchableOpacity>
+
+        <View className="items-center mt-4">
+          <Text className="text-gray-600">If Therapist?</Text>
           <TouchableOpacity
-           onPress={() => navigation.navigate("Auth", {screen: "Register"})}
+            onPress={() => navigation.navigate("Auth", { screen: "T-Login" })}
           >
-            <Text className=" text-blue-700 underline text-sm">
-              Create an account
+            <Text className="underline text-base text-blue-700 font-bold">
+              Sign in as Therapist here
             </Text>
           </TouchableOpacity>
         </View>
-     
-     
-    <View className="space-y-2 p-2">
-      <TouchableOpacity 
-      onPress={handleSignIn}
-       className="justify-center items-center border-2 border-gray-500 bg-blue-500  rounded-md h-12 w-[360px] ">
-        <Text>
-            Sign In
-        </Text>
-       </TouchableOpacity>
-       
-       <Text className="px-2">
-         If Therapist?  
-       </Text>
-
-      <TouchableOpacity
-        onPress={() => navigation.navigate( "Auth", {screen: "T-Login"})}
-      >
-        <Text className="underline text-base text-blue-700 text-center tracking-[2px] font-bold">Sign in as Therapist here</Text>
-      </TouchableOpacity>
-    </View>
-       <StatusBar style='dark' />
+      </View>
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default LogInScreen
+export default LogInScreen;

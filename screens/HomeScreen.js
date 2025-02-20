@@ -1,68 +1,57 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { SparklesIcon } from "react-native-heroicons/solid"; 
 import { StatusBar } from 'expo-status-bar';
 
-
-
-
 const HomeScreen = () => {
     const navigation = useNavigation();
 
     React.useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: false,
-      });
+        navigation.setOptions({
+            headerShown: false,
+        });
     }, []);
-  return (
-   
-     <View className="flex-1 items-center justify-center pt-64  bg-blue-400 space-y-72" >
-       
-      <View className="space-y-1">
-       <View className="flex-row space-x-1 ">
-         <SparklesIcon size={50} color="#f5f5dc" />
-         <Text className="font-bold uppercase text-yellow-50 tracking-[6px] pt-3 text-2xl">
-            VirtualMindSpace
-         </Text>
-       </View>
 
-       <View>
-         <Text className="font-extrabold text-sm tracking-[2px] text-slate-500 text-center">
-            Welcome to the Home of Online Therapy
-         </Text>
-       </View>
+    return (
+        <View className="flex-1 bg-blue-500 justify-end items-center px-6 pb-10">
+            <StatusBar style="light" />
 
+            {/* Header Section */}
+            <View className="items-center absolute top-64">
+                <View className="flex-row items-center  space-x-3">
+                    <SparklesIcon size={50} color="#f5f5dc" />
+                    <Text className="text-3xl font-bold text-yellow-50 tracking-widest">
+                        VirtualMindSpace
+                    </Text>
+                </View>
+                <Text className="text-lg text-yellow-50 mt-4 text-center">
+                    Welcome to the Home of Online Therapy
+                </Text>
+            </View>
 
-      </View>
+            {/* Buttons Section */}
+            <View className="w-full space-y-5">
+                <TouchableOpacity
+                    onPress={() => navigation.navigate("Auth", { screen: "Login" })}
+                    className="py-3 rounded-full bg-yellow-50 border border-blue-700"
+                >
+                    <Text className="text-center text-blue-600 text-lg font-semibold">
+                        Log In
+                    </Text>
+                </TouchableOpacity>
 
-      
-      
-     
-    <View className="space-y-3">
+                <TouchableOpacity
+                    onPress={() => navigation.navigate("Auth", { screen: "Register" })}
+                    className="py-3 rounded-full bg-transparent border border-yellow-50"
+                >
+                    <Text className="text-center text-yellow-50 text-lg font-semibold">
+                        Sign Up
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+};
 
-    <TouchableOpacity
-     onPress={() => navigation.navigate("adminLogin")} >
-       <Text className="text-center text-lg text-white">Admin</Text>
-       </TouchableOpacity>
-
-      <TouchableOpacity
-       onPress={() => navigation.navigate("Auth", {screen: "Login"})} 
-          className="justify-center items-center border-2 border-gray-500 bg-slate-500  rounded-md h-12 w-[360px] ">
-         <Text className="text-white text-lg ">Log In</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-      onPress={() => navigation.navigate( "Auth", {screen: "Register"})}  
-          className="justify-center items-center border-2 border-gray-500 bg-slate-200  rounded-md h-12 ">
-         <Text className="text-slate-500  text-lg ">Sign up</Text>
-      </TouchableOpacity>
-      </View>
-      <StatusBar style='light' />
-     </View>
-     
-    
-  )
-}
-
-export default HomeScreen
+export default HomeScreen;

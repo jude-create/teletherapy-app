@@ -3,14 +3,16 @@
     "name": "teletherapy-app",
     "slug": "teletherapy-app",
     "version": "1.0.0",
-    "permissions": ["CAMERA_ROLL"],
+    "permissions": [
+      "CAMERA_ROLL"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/virtual.jpeg",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563EB"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,10 +24,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.jude_create.teletherapyapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
     }
   }
 }

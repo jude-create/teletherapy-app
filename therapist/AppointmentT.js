@@ -65,9 +65,9 @@ const AppointmentT = () => {
     // You can perform further actions like sending the data to a server
   
   return (
-    <ScrollView className="flex-1  space-y-5  rounded-2xl   m-auto ">
+    <View className="flex-1 items-center justify-center  space-y-10  rounded-2xl   m-auto ">
     <View>
-      <Text className="text-lg font-bold text-center text-blue-400">Set Appointment</Text>
+      <Text className="text-2xl font-bold text-center text-blue-400">Set Appointment</Text>
     </View>
 
     <View>
@@ -136,7 +136,7 @@ const AppointmentT = () => {
     <View className=" mt-8 flex items-center">
         <Text className="text-base font-bold">Set time available</Text>
     <TextInput
-     className="border-2 h-16  border-gray-500 rounded-lg p-2 bg-white w-44 mt-2 "
+     className="border-2 h-16  border-gray-500 rounded-lg p-2 bg-white  mt-2 "
           keyboardType="default"
           multiline={true}
           placeholder="use 24hrs format eg(8:00 - 16:00)"
@@ -147,7 +147,7 @@ const AppointmentT = () => {
     <View className="flex items-center">
     <TouchableOpacity
      onPress={handleSetAppointment}
-     className="justify-center items-center border-2 border-gray-500 bg-blue-500 rounded-md h-10 w-[200px] mx-5"
+     className="justify-center items-center  bg-blue-500 rounded-full h-14 px-5"
     >
         <Text className="text-lg text-white">Set Appointment Schedule </Text>
     </TouchableOpacity>
@@ -158,7 +158,7 @@ const AppointmentT = () => {
           <Text className="text-lg font-bold text-green-500 text-center">Appointment set successfully!</Text>
         </View>
       )}
-    </ScrollView>
+    </View>
   )
 }
 

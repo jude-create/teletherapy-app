@@ -1,83 +1,84 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
-import React from 'react'
-import {  BanknotesIcon, BellIcon, ChatBubbleLeftIcon, UserIcon } from 'react-native-heroicons/solid';
+import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React from 'react';
+import { BanknotesIcon, BellIcon, ChatBubbleLeftIcon, UserIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from "@react-navigation/native";
 
 const TherapistHomeScreen = () => {
-
   const navigation = useNavigation();
+
   return (
-    <View className="flex-1   bg-zinc-200  p-2 space-y-6 ">
+    <ScrollView className="flex-1 bg-gray-100 p-4">
+      
+      {/* Stats Section */}
+      <View className="flex-row justify-between">
+        {/* Patients Card */}
+        <TouchableOpacity className="flex-1 bg-blue-600 rounded-lg p-4 shadow-md mx-2">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg font-bold text-white">Patients</Text>
+            <UserIcon size={40} color="#fff" />
+          </View>
+          <Text className="text-3xl font-extrabold text-white mt-2">10</Text>
+        </TouchableOpacity>
 
-     <View className="flex-row space-x-4 mt-4">
-      <TouchableOpacity
-      className="border-2 justify-center  border-blue-500 bg-blue-600  rounded-md h-24 w-44 shadow-lg shadow-gray-900"
-      >
-      <View className="flex-row space-x-16 px-2">
-        <Text className="text-base font-bold text-slate-100 uppercase">Patients</Text>
-        <UserIcon size={40} color="#808080" />
+        {/* Appointments Card */}
+        <TouchableOpacity className="flex-1 bg-orange-600 rounded-lg p-4 shadow-md mx-2">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg font-bold text-white">Appointments</Text>
+            <BellIcon size={40} color="#fff" />
+          </View>
+          <Text className="text-3xl font-extrabold text-white mt-2">4</Text>
+        </TouchableOpacity>
       </View>
-        <Text className="px-2 text-slate-50 font-extrabold tracking-wide">10</Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-      className="border-2 justify-center  border-orange-500 bg-orange-600  rounded-md h-24 w-44 shadow-lg shadow-gray-900"
-      >
-     <View className="flex-row space-x-6 px-1">
-        <Text className="text-base font-bold text-slate-100 uppercase">Appointments</Text>
-        <BellIcon size={40} color="#999999"/>
+      {/* Messages & Billing Section */}
+      <View className="flex-row justify-between mt-4">
+        {/* Messages Card */}
+        <TouchableOpacity className="flex-1 bg-green-600 rounded-lg p-4 shadow-md mx-2">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg font-bold text-white">Messages</Text>
+            <ChatBubbleLeftIcon size={40} color="#fff" />
+          </View>
+          <Text className="text-3xl font-extrabold text-white mt-2">20</Text>
+        </TouchableOpacity>
+
+        {/* Billing & Invoices Card */}
+        <TouchableOpacity className="flex-1 bg-red-600 rounded-lg p-4 shadow-md mx-2">
+          <View className="flex-row justify-between items-center">
+            <Text className="text-lg font-bold text-white">Billing</Text>
+            <BanknotesIcon size={40} color="#fff" />
+          </View>
+          <Text className="text-3xl font-extrabold text-white mt-2">7</Text>
+        </TouchableOpacity>
       </View>
-        <Text className="px-2 text-slate-50 font-extrabold tracking-wide">4</Text>
-      </TouchableOpacity>
-    </View>
 
-   <View className="flex-row space-x-3 mt-4">
-      <TouchableOpacity
-       className="border-2 justify-center  border-green-500 bg-green-600  rounded-md h-24 w-44 shadow-lg shadow-gray-900"
-      >
-      <View  className="flex-row space-x-12 px-2">
-        <Text className="text-base font-bold text-slate-100 uppercase">Messages</Text>
-        <ChatBubbleLeftIcon size={40} color="#808080"/>
+      {/* Questionnaire Section */}
+      <View className="mt-6 bg-white rounded-lg p-4 shadow-md">
+        <Text className="text-sm font-medium text-gray-600">
+          Fill out the questionnaire below to complete your profile. Ignore if already answered.
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Questions")}
+          className="mt-3 bg-blue-500 py-3 rounded-lg flex items-center"
+        >
+          <Text className="text-lg font-semibold text-white">Complete Questionnaire</Text>
+        </TouchableOpacity>
       </View>
-        <Text className="px-2 text-slate-50 font-extrabold tracking-wide">20</Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-      className="border-2 justify-center  border-red-500 bg-red-600  rounded-md h-24 w-[184px] shadow-lg shadow-gray-900"
-      >
-      <View  className="flex-row space-x-1 ">
-        <Text className="font-bold text-slate-100 uppercase">Billings and Invoices</Text>
-        <BanknotesIcon size={40} color="#999999" />
+      {/* Image Section */}
+      <View className="mt-6">
+        <Image className="w-full h-48 rounded-lg shadow-md" source={require('../assets/priscilla.jpg')} />
       </View>
-        <Text className="px-2 text-slate-50 font-extrabold tracking-wide">7</Text>
-      </TouchableOpacity>
-    </View>
 
-  <View className="mt-4 p-2 space-y-3 mb-2">
-   <Text className="font-bold text-sm">Fill Questionaire below to complete profile, ignore if answered already.</Text>
-  <TouchableOpacity
-  onPress={() => navigation.navigate( "Questions")} 
-  className="justify-center items-center border-2 border-gray-500 bg-blue-500  rounded-md h-12 w-[300px] mx-5 ">
-    <Text>Questionaire</Text>
-  </TouchableOpacity>
-  </View>
+      {/* Training Section */}
+      <View className="mt-6 flex-row items-center justify-center">
+        <Text className="text-lg font-semibold">Begin your therapist training</Text>
+        <TouchableOpacity>
+          <Text className="text-lg font-semibold text-blue-600 ml-2">here</Text>
+        </TouchableOpacity>
+      </View>
 
-  <View>
-    <Image
-     className="w-full h-48"
-     source={require('../assets/priscilla.jpg')} />
-   </View>
+    </ScrollView>
+  );
+};
 
-    <View className="flex-row space-x-1 ">
-       <Text className="font-extrabold text-base">
-         Begin your therapist training 
-       </Text>{""}
-     <TouchableOpacity>
-        <Text className="font-extrabold text-base text-blue-600">here</Text>
-     </TouchableOpacity>
-   </View>
-</View>
-  )
-}
-
-export default TherapistHomeScreen
+export default TherapistHomeScreen;

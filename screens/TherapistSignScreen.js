@@ -1,12 +1,12 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView  } from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowSmallLeftIcon } from 'react-native-heroicons/solid';
-import { addDoc, doc, getFirestore, collection, setDoc } from 'firebase/firestore';
-import { db, auth} from '../config/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-//import { auth } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, auth } from '../config/firebase';
+import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
 
 const TherapistSignScreen = () => {
   const navigation = useNavigation();
@@ -14,17 +14,15 @@ const TherapistSignScreen = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [license, setLicense] = useState("");
-  const [text, setText] = useState("");
+  const [bio, setBio] = useState("");
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [age, setAge] = useState("")
+  const [age, setAge] = useState("");
   const [userType, setUserType] = useState("Therapist");
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [error, setError] = useState(null);
-
-
-  
+  const [loading, setLoading] = useState(false); // Add loading state
 
   const checkPasswordsMatch = () => {
     if (password === confirmPassword) {
@@ -36,183 +34,165 @@ const TherapistSignScreen = () => {
 
   const signUp = async () => {
     try {
-      // Check if passwords match before proceeding
       checkPasswordsMatch();
-      const authUser = await createUserWithEmailAndPassword(auth, email, password);
-
-
       if (!passwordsMatch) {
-        setError("Passwords do not match");
+        setError('Passwords do not match');
         return;
       }
-     
+
+      const authUser = await createUserWithEmailAndPassword(auth, email, password);
+
       const userDocRef = doc(db, "therapists", authUser.user.uid);
-      // Create a new patient object
-      if(authUser){
+
       const newTherapist = {
         uid: authUser.user.uid,
         name: name,
         email: email,
         license: license,
         phone: phone,
-        text: text,
+        bio: bio,
         age: age,
         profileImage: "",
         selectedOption: "",
-      therapistProfile: [],
-    therapistExperiences: [],
-      }
+        therapistProfile: [],
+        therapistExperiences: [],
+      };
+
       await setDoc(userDocRef, newTherapist);
-      } 
-
-      
-
-      // Navigate to the desired screen after successful sign-up
-      navigation.navigate("TherapistDrawer");
+      navigation.navigate('TherapistDrawer');
     } catch (e) {
-      // Handle errors
-      setError("Error signing up. Please try again.");
-      console.error(e);
+      setError('Error signing up. Please try again.');
+      
+    }finally {
+      setLoading(false); // Stop loading
     }
   };
-  
+
+   // Show LoadingOverlay if loading is true
+   if (loading) {
+    return <LoadingOverlay message="Signing up..." />;
+  }
+
+
   return (
-    <SafeAreaView className="flex-1  pt-5 bg-zinc-200 space-y-3 ">
-    <TouchableOpacity
-   onPress={() => navigation.navigate("Home")}
-   className="px-3">
-  <ArrowSmallLeftIcon size={30}  color="#000000"/>
-  </TouchableOpacity>
-    <View className="p-3">
-      <Text className="font-extrabold text-3xl tracking-[2px] text-slate-500">
-      Sign Up
-      </Text>
-    </View>
-   
+    <SafeAreaView className="flex-1 bg-zinc-200">
+      {/* Back Button */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Home")}
+        className="px-4 pt-4"
+      >
+        <ArrowSmallLeftIcon size={30} color="#000000" />
+      </TouchableOpacity>
 
-    <ScrollView className="px-4 space-y-3 relative">
+      {/* Header */}
+      <View className="px-6 pt-4">
+        <Text className="font-extrabold text-2xl tracking-[2px] text-slate-600">
+          Sign Up
+        </Text>
+      </View>
 
-    <View>
-      {/* Input field for user type */}
-      <TextInput
-        className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white "
-        placeholder="User Type (e.g., Patient or Therapist)"
-        keyboardType="default"
-        value={userType}
-        onChangeText={(type) => setUserType(type)}
-      />
-    </View>
-    
-      <View>
-        
+      {/* Form Container */}
+      <ScrollView className="px-6 space-y-4 pt-3">
+        {/* User Type */}
         <TextInput
-          className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white "
-          keyboardType="default"
-          placeholder="Enter your full name here"
-          autoFocus
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="User Type (e.g., Therapist)"
+          value={userType}
+          onChangeText={(type) => setUserType(type)}
+        />
+
+        {/* Full Name */}
+        <TextInput
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Full Name"
           value={name}
           onChangeText={(text) => setName(text)}
         />
 
-
-      </View>
-     
-      <View>
+        {/* Email */}
         <TextInput
-         className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white "
-          keyboardType="default"
-          placeholder="Enter your email address here"
-          type="Email-address"
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Email Address"
+          keyboardType="email-address"
           value={email}
           onChangeText={(text) => setEmail(text)}
         />
-      </View>
 
-      <View>
-      <TextInput
-            className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white "
-            placeholder='Phone Number'
-            keyboardType="numeric"
-            value={phone}
-            onChangeText={(text) => setPhone(text)}
-            
-          />
-      </View>
+        {/* Phone Number */}
+        <TextInput
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={(text) => setPhone(text)}
+        />
 
-
-      <View className="flex-row space-x-2">
-       
-      <TextInput
-            className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white w-60"
-            placeholder='License Number'
+        {/* License Number and Age */}
+        <View className="flex-row space-x-4">
+          <TextInput
+            className="flex-1 border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+            placeholder="License Number"
             keyboardType="numeric"
             value={license}
-            onChangeText={(number) => setLicense(number)}
-            
+            onChangeText={(text) => setLicense(text)}
           />
+          <TextInput
+            className="flex-1 border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+            placeholder="Age"
+            keyboardType="numeric"
+            value={age}
+            onChangeText={(text) => setAge(text)}
+          />
+        </View>
 
-      <TextInput
-          className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white w-24"
-          keyboardType="default"
-          placeholder="Age"
-          value={age}
-          onChangeText={(text) => setAge(text)}
-        />
-      </View>
-
-      
-      <View>
+        {/* Bio */}
         <TextInput
-          className="border-2 h-44  border-gray-500 rounded-lg pb-28 px-2 bg-white "
-          keyboardType="default"
-          multiline={true}
-          placeholder="Tell us more about yourself(Educational background, Certificates etc)"
-          value={text}
-          onChangeText={(text) => setText(text)}
+          className="border-2 h-44 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Tell us more about yourself (Educational background, Certificates, etc.)"
+          multiline
+          value={bio}
+          onChangeText={(text) => setBio(text)}
         />
-      </View>
 
-      <View>
-      <Text className="text-red-600 italic">{error}</Text>
+        {/* Password */}
         <TextInput
-          className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white"
-          placeholder="Enter your password"
-          keyboardType="default"
-          type="password"
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Password"
+          secureTextEntry
           value={password}
           onChangeText={(text) => setPassword(text)}
-          secureTextEntry={true}
         />
-      </View>
 
-      <View>
+        {/* Confirm Password */}
         <TextInput
-          className="border-2 h-14  border-gray-500 rounded-lg p-2 bg-white"
-          placeholder="Confirm your password"
-          keyboardType="default"
-          type="password"
+          className="border-2 h-14 border-gray-500 rounded-xl p-4 bg-white"
+          placeholder="Confirm Password"
+          secureTextEntry
           value={confirmPassword}
           onChangeText={(text) => setConfirmPassword(text)}
-          secureTextEntry={true}
           onEndEditing={checkPasswordsMatch}
-          
         />
-         {!passwordsMatch && (
-      <Text className="text-red-600 italic">Passwords do not match</Text>
-    )}
-      </View>
+        {!passwordsMatch && (
+          <Text className="text-red-600 italic">Passwords do not match</Text>
+        )}
 
-     
-      <TouchableOpacity  
-         onPress={signUp}
-     className="justify-center items-center border-2 border-gray-500 bg-slate-500  rounded-md h-12 mb-2 ">
-      <Text className="text-base font-bold">
-          Sign up
-      </Text>
-     </TouchableOpacity>
-    </ScrollView>
-  </SafeAreaView>
-  )
-}
+        {/* Error Message */}
+        {error && (
+          <Text className="text-red-600 italic">{error}</Text>
+        )}
 
-export default TherapistSignScreen
+        {/* Sign Up Button */}
+        <TouchableOpacity
+          onPress={signUp}
+          className="justify-center items-center bg-blue-500 rounded-full h-14 mb-8 "
+        >
+          <Text className="text-white text-lg font-bold">
+            Sign Up
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default TherapistSignScreen;

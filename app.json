@@ -2,18 +2,11 @@
   "expo": {
     "name": "teletherapy-app",
     "slug": "teletherapy-app",
+    "scheme": "teletherapyapp",
     "version": "1.0.0",
-    "permissions": [
-      "CAMERA_ROLL"
-    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/virtual.jpeg",
-      "resizeMode": "contain",
-      "backgroundColor": "#2563EB"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -25,7 +18,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jude_create.teletherapyapp"
+      "package": "com.jude_create.teletherapyapp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,11 +29,32 @@
         "projectId": "9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
-    }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#0F3D4A",
+          "defaultChannel": "default"
+        }
+      ],
+      "@react-native-google-signin/google-signin",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#2563EB"
+        }
+      ],
+      "expo-web-browser",
+      "expo-status-bar"
+    ]
   }
 }

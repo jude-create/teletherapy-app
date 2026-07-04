@@ -46,7 +46,7 @@ const AdminLogin = () => {
         <View className="space-y-2 p-2">
       <TouchableOpacity 
           onPress={() => navigation.navigate("admin")}
-       className="justify-center items-center border-2 border-gray-500 bg-blue-500  rounded-md h-12 w-[360px] ">
+       className="justify-center items-center border-2 border-gray-500 bg-blue-500 rounded-md h-12 w-full">
         <Text>
             Sign In
         </Text>

@@ -1,112 +1,282 @@
-import { View, Text, Modal, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { auth, db } from '../config/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { CalendarIcon, ClockIcon, CheckCircleIcon } from 'react-native-heroicons/solid';
+import { CheckCircleIcon } from 'react-native-heroicons/solid';
+import { Button, Card, EmptyState, ErrorState, Screen } from '../components/ui';
+import { getCurrentUser } from '../services/auth';
+import { getUpcomingSlotOptions } from '../services/availability';
+import { saveAppointment as saveAppointmentRecord } from '../services/appointments';
+import { colors, spacing, typography } from '../theme';
 
-const BookAppointment = ({ therapistId, visible, onClose }) => {
+const BookAppointment = ({ therapistId, therapist, visible, onClose, route }) => {
   const navigation = useNavigation();
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const routeTherapistId = route?.params?.therapistId;
+  const routeTherapist = route?.params?.therapist;
+  const selectedTherapistId = therapistId || routeTherapistId || null;
+  const selectedTherapist = therapist || routeTherapist || null;
+  const isModal = typeof visible === 'boolean';
+  const slotOptions = useMemo(
+    () => getUpcomingSlotOptions(selectedTherapist?.availability?.slots || []),
+    [selectedTherapist]
+  );
+  const [selectedOptionId, setSelectedOptionId] = useState('');
   const [appointmentBooked, setAppointmentBooked] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const selectedSlot = slotOptions.find((slot) => slot.optionId === selectedOptionId);
 
-  const onChange = (event, selectedDate) => {
-    if (selectedDate) setDate(selectedDate);
-    setShowDatePicker(false);
-    setShowTimePicker(false);
+  const closeBooking = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+    navigation.navigate('PatientDrawer');
   };
 
-  const saveAppointment = async () => {
+  const handleSaveAppointment = async () => {
     try {
-      const currentUser = auth.currentUser;
+      setSaving(true);
+      setErrorMessage('');
+      const currentUser = getCurrentUser();
       if (!currentUser) {
-        console.warn('No authenticated user');
+        setErrorMessage('You need to be signed in to book an appointment.');
+        return;
+      }
+      if (!selectedTherapistId) {
+        setErrorMessage('Choose a therapist before booking an appointment.');
+        return;
+      }
+      if (!selectedSlot) {
+        setErrorMessage('Choose one of the therapist available slots before requesting an appointment.');
         return;
       }
 
-      const userId = currentUser.uid;
       const appointmentData = {
-        therapistId: therapistId,
-        appointmentDateTime: date,
+        therapistId: selectedTherapistId,
+        therapist: selectedTherapist,
+        therapistName: selectedTherapist?.name || 'Therapist',
+        patientId: currentUser.uid,
+        patientEmail: currentUser.email,
+        patientName: currentUser.displayName || currentUser.email,
+        appointmentDateTime: selectedSlot.appointmentDateTime,
+        date: selectedSlot.appointmentDateTime.toISOString().slice(0, 10),
+        time: selectedSlot.timeLabel,
+        slot: {
+          id: selectedSlot.id,
+          day: selectedSlot.day,
+          startTime: selectedSlot.startTime,
+          endTime: selectedSlot.endTime,
+          label: selectedSlot.timeLabel,
+        },
+        status: 'pending',
       };
 
-      await setDoc(doc(db, 'appointments', userId), appointmentData, { merge: true });
+      await saveAppointmentRecord(currentUser.uid, appointmentData);
       setAppointmentBooked(true);
 
-      // Navigate after a delay for better UX
-      setTimeout(() => {
-        onClose(); // Close modal
-        navigation.navigate('PatientDrawer');
-      }, 1500);
+      setTimeout(closeBooking, 1200);
     } catch (error) {
-      console.error('Error saving appointment:', error.message);
+      setErrorMessage(error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  return (
-    <Modal transparent visible={visible} animationType="slide">
-      <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-        <View className="bg-white w-80 p-6 rounded-2xl shadow-lg items-center">
-          {/* Header */}
-          <Text className="text-xl font-bold text-gray-800">Book an Appointment</Text>
+  const content = (
+    <Card style={isModal ? styles.modalCard : undefined}>
+      <Text style={styles.title}>Book an Appointment</Text>
+      <Text style={styles.body}>
+        {selectedTherapist?.name
+          ? `Choose an available session time with ${selectedTherapist.name}.`
+          : 'Choose an available session time.'}
+      </Text>
 
-          {/* Date Selection */}
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            className="flex-row items-center space-x-2 p-3 bg-gray-100 rounded-lg mt-4 w-full"
-          >
-            <CalendarIcon size={22} color="#2563EB" />
-            <Text className="text-lg text-gray-700">Select Date</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker value={date} mode="date" is24Hour display="default" onChange={onChange} />
-          )}
-
-          {/* Time Selection */}
-          <TouchableOpacity
-            onPress={() => setShowTimePicker(true)}
-            className="flex-row items-center space-x-2 p-3 bg-gray-100 rounded-lg mt-3 w-full"
-          >
-            <ClockIcon size={22} color="#2563EB" />
-            <Text className="text-lg text-gray-700">Select Time</Text>
-          </TouchableOpacity>
-          {showTimePicker && (
-            <DateTimePicker value={date} mode="time" is24Hour display="default" onChange={onChange} />
-          )}
-
-          {/* Selected Date & Time */}
-          <View className="mt-4">
-            <Text className="text-lg font-semibold text-gray-600">{date.toLocaleString()}</Text>
-          </View>
-
-          {/* Success Message */}
-          {appointmentBooked && (
-            <View className="flex-row items-center space-x-2 mt-3">
-              <CheckCircleIcon size={24} color="green" />
-              <Text className="text-lg text-green-600 font-bold">Appointment booked!</Text>
-            </View>
-          )}
-
-          {/* Action Buttons */}
-          <View className="mt-6 w-full space-y-2">
-            <TouchableOpacity
-              onPress={saveAppointment}
-              className="bg-blue-500 py-3 rounded-lg w-full items-center"
-            >
-              <Text className="text-lg text-white font-semibold">Confirm Booking</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={onClose} className="py-3 w-full items-center">
-              <Text className="text-lg text-gray-500 font-semibold">Cancel</Text>
-            </TouchableOpacity>
-          </View>
+      {selectedTherapist ? (
+        <View style={styles.therapistSummary}>
+          <Text style={styles.summaryLabel}>Selected therapist</Text>
+          <Text style={styles.summaryName}>{selectedTherapist.name || 'Therapist'}</Text>
+          <Text style={styles.summaryText}>
+            {(selectedTherapist.specialties || []).slice(0, 3).join(', ') || 'Specialties pending'}
+          </Text>
+          <Text style={styles.summaryText}>
+            License: {selectedTherapist.license || 'Pending'}
+          </Text>
         </View>
+      ) : null}
+
+      {errorMessage ? <ErrorState title="Booking issue" message={errorMessage} /> : null}
+
+      {slotOptions.length ? (
+        <View style={styles.slotList}>
+          {slotOptions.slice(0, 12).map((slot) => {
+            const selected = selectedOptionId === slot.optionId;
+            return (
+              <Pressable
+                key={slot.optionId}
+                accessibilityRole="button"
+                onPress={() => setSelectedOptionId(slot.optionId)}
+                style={[styles.slotButton, selected && styles.slotButtonSelected]}
+              >
+                <Text style={[styles.slotDate, selected && styles.slotTextSelected]}>
+                  {slot.dateLabel}
+                </Text>
+                <Text style={[styles.slotTime, selected && styles.slotTextSelected]}>
+                  {slot.timeLabel}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <EmptyState
+          title="No slots available"
+          message="This therapist has not published bookable session times yet."
+        />
+      )}
+
+      <View style={styles.selectionBox}>
+        <Text style={styles.selectionLabel}>Selected appointment</Text>
+        <Text style={styles.selectionValue}>
+          {selectedSlot
+            ? `${selectedSlot.dateLabel} at ${selectedSlot.timeLabel}`
+            : 'Choose a slot above'}
+        </Text>
       </View>
-    </Modal>
+
+      {appointmentBooked ? (
+        <View style={styles.successRow}>
+          <CheckCircleIcon size={24} color={colors.success} />
+          <Text style={styles.successText}>Request sent for therapist approval.</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.actions}>
+        <Button
+          title="Request Appointment"
+          onPress={handleSaveAppointment}
+          loading={saving}
+          disabled={!selectedSlot}
+        />
+        <Button title="Cancel" variant="ghost" onPress={closeBooking} />
+      </View>
+    </Card>
   );
+
+  if (isModal) {
+    return (
+      <Modal transparent visible={visible} animationType="slide">
+        <View style={styles.modalOverlay}>{content}</View>
+      </Modal>
+    );
+  }
+
+  return <Screen contentContainerStyle={styles.screenContent}>{content}</Screen>;
 };
+
+const styles = StyleSheet.create({
+  screenContent: {
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  body: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  slotList: {
+    gap: spacing.sm,
+  },
+  slotButton: {
+    minHeight: 58,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  slotButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  slotDate: {
+    ...typography.body,
+    flex: 1,
+    fontWeight: '700',
+  },
+  slotTime: {
+    ...typography.small,
+    fontWeight: '800',
+  },
+  slotTextSelected: {
+    color: colors.primary,
+  },
+  therapistSummary: {
+    borderRadius: 8,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  summaryLabel: {
+    ...typography.caption,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  summaryName: {
+    ...typography.subheading,
+    color: colors.primary,
+  },
+  summaryText: {
+    ...typography.small,
+  },
+  selectionBox: {
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  selectionLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  selectionValue: {
+    ...typography.body,
+    fontWeight: '700',
+  },
+  successRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  successText: {
+    ...typography.body,
+    color: colors.success,
+    fontWeight: '800',
+  },
+  actions: {
+    gap: spacing.sm,
+  },
+});
 
 export default BookAppointment;

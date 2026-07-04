@@ -3,10 +3,8 @@ import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowSmallLeftIcon } from 'react-native-heroicons/solid';
-import { doc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { db, auth } from '../config/firebase';
 import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
+import { createTherapistAccount } from '../services/therapists';
 
 const TherapistSignScreen = () => {
   const navigation = useNavigation();
@@ -25,27 +23,27 @@ const TherapistSignScreen = () => {
   const [loading, setLoading] = useState(false); // Add loading state
 
   const checkPasswordsMatch = () => {
-    if (password === confirmPassword) {
-      setPasswordsMatch(true);
-    } else {
-      setPasswordsMatch(false);
-    }
+    const matches = password === confirmPassword;
+    setPasswordsMatch(matches);
+    return matches;
   };
 
   const signUp = async () => {
     try {
-      checkPasswordsMatch();
-      if (!passwordsMatch) {
+      setLoading(true);
+      setError(null);
+      if (!checkPasswordsMatch()) {
         setError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+      if (!email || !password || !name) {
+        setError('Please fill in your name, email, and password.');
+        setLoading(false);
         return;
       }
 
-      const authUser = await createUserWithEmailAndPassword(auth, email, password);
-
-      const userDocRef = doc(db, "therapists", authUser.user.uid);
-
-      const newTherapist = {
-        uid: authUser.user.uid,
+      const therapist = {
         name: name,
         email: email,
         license: license,
@@ -58,10 +56,9 @@ const TherapistSignScreen = () => {
         therapistExperiences: [],
       };
 
-      await setDoc(userDocRef, newTherapist);
-      navigation.navigate('TherapistDrawer');
+      await createTherapistAccount({ email, password, therapist });
     } catch (e) {
-      setError('Error signing up. Please try again.');
+      setError(e.message || 'Error signing up. Please try again.');
       
     }finally {
       setLoading(false); // Stop loading

@@ -1,57 +1,93 @@
-import { View, Text, TouchableOpacity } from 'react-native';
 import React from 'react';
-import { useNavigation } from "@react-navigation/native";
-import { SparklesIcon } from "react-native-heroicons/solid"; 
+import { StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useNavigation } from '@react-navigation/native';
+import { SparklesIcon } from 'react-native-heroicons/solid';
+import { Button, Screen } from '../components/ui';
+import { colors, spacing, typography } from '../theme';
 
 const HomeScreen = () => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
 
-    React.useLayoutEffect(() => {
-        navigation.setOptions({
-            headerShown: false,
-        });
-    }, []);
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
-    return (
-        <View className="flex-1 bg-blue-500 justify-end items-center px-6 pb-10">
-            <StatusBar style="light" />
-
-            {/* Header Section */}
-            <View className="items-center absolute top-64">
-                <View className="flex-row items-center  space-x-3">
-                    <SparklesIcon size={50} color="#f5f5dc" />
-                    <Text className="text-3xl font-bold text-yellow-50 tracking-widest">
-                        VirtualMindSpace
-                    </Text>
-                </View>
-                <Text className="text-lg text-yellow-50 mt-4 text-center">
-                    Welcome to the Home of Online Therapy
-                </Text>
-            </View>
-
-            {/* Buttons Section */}
-            <View className="w-full space-y-5">
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Auth", { screen: "Login" })}
-                    className="py-3 rounded-full bg-yellow-50 border border-blue-700"
-                >
-                    <Text className="text-center text-blue-600 text-lg font-semibold">
-                        Log In
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Auth", { screen: "Register" })}
-                    className="py-3 rounded-full bg-transparent border border-yellow-50"
-                >
-                    <Text className="text-center text-yellow-50 text-lg font-semibold">
-                        Sign Up
-                    </Text>
-                </TouchableOpacity>
-            </View>
+  return (
+    <Screen
+      scroll={false}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      edges={['top', 'bottom']}
+    >
+      <StatusBar style="light" />
+      <View style={styles.hero}>
+        <View style={styles.brandRow}>
+          <SparklesIcon size={48} color={colors.primarySoft} />
+          <Text style={styles.brand}>VirtualMindSpace</Text>
         </View>
-    );
+        <Text style={styles.tagline}>Welcome to the home of online therapy</Text>
+      </View>
+
+      <View style={styles.actions}>
+        <Button
+          title="Log In"
+          variant="secondary"
+          onPress={() => navigation.navigate('Auth', { screen: 'Login' })}
+        />
+        <Button
+          title="Sign Up"
+          variant="outline"
+          onPress={() => navigation.navigate('Auth', { screen: 'Register' })}
+          style={styles.outlineButton}
+          textStyle={styles.outlineButtonText}
+        />
+      </View>
+    </Screen>
+  );
 };
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.primary,
+  },
+  content: {
+    justifyContent: 'space-between',
+    maxWidth: 520,
+    paddingVertical: spacing.xxl,
+  },
+  hero: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  brandRow: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  brand: {
+    ...typography.title,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  tagline: {
+    ...typography.body,
+    color: colors.primarySoft,
+    textAlign: 'center',
+  },
+  actions: {
+    width: '100%',
+    gap: spacing.md,
+  },
+  outlineButton: {
+    borderColor: colors.primarySoft,
+  },
+  outlineButtonText: {
+    color: colors.white,
+  },
+});
 
 export default HomeScreen;

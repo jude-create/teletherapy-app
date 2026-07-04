@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "639405419145",
+    "project_id": "teletherapy-app",
+    "storage_bucket": "teletherapy-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:639405419145:android:ba1f19832089b55741f458",
+        "android_client_info": {
+          "package_name": "com.jude_create.teletherapyapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "639405419145-agat4fd6i658ma9dfvgb90lo16a8m9c2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jude_create.teletherapyapp",
+            "certificate_hash": "f24c83d671046d9d1c44f1abf010f5ece36a9a4d"
+          }
+        },
+        {
+          "client_id": "639405419145-r2k84cfjle37b2qk2e3q45h9liia804o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5ELJmvBOX58lcDW-RDWu06eSQojMzCbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "639405419145-r2k84cfjle37b2qk2e3q45h9liia804o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

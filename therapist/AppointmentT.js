@@ -1,165 +1,304 @@
-import { View, Text, TextInput, ScrollView } from 'react-native'
-import React, { useState } from 'react'
-import { TouchableOpacity } from 'rn-tailwind'
-import { auth, db } from '../config/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { KeyboardAvoidingView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Button, Card, EmptyState, ErrorState, Input, LoadingState, Screen } from '../components/ui';
+import { getCurrentUser } from '../services/auth';
+import {
+  formatAppointmentDate,
+  getAppointmentsForTherapist,
+  updateAppointmentSessionLink,
+  updateAppointmentStatus,
+} from '../services/appointments';
+import { colors, spacing, typography } from '../theme';
 
 const AppointmentT = () => {
-   
-    const [selectedDays, setSelectedDays] = useState({
-      Monday: false,
-      Tuesday: false,
-      Wednesday: false,
-      Thursday: false,
-      Friday: false,
-      Saturday: false,
-      Sunday: false
-});
-  const [time, setTime] = useState("");
-  const [appointmentSetSuccess, setAppointmentSetSuccess] = useState(false);
+  const navigation = useNavigation();
+  const [requests, setRequests] = useState([]);
+  const [sessionLinks, setSessionLinks] = useState({});
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [updatingId, setUpdatingId] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const toggleDaySelection = (day) => {
-    setSelectedDays(prevState => ({
-      ...prevState,
-      [day]: !prevState[day]
-    }));
+  const loadRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      setErrorMessage('');
+      const currentUser = getCurrentUser();
+
+      if (!currentUser) {
+        setRequests([]);
+        return;
+      }
+
+      const nextRequests = await getAppointmentsForTherapist(currentUser.uid);
+      setRequests(nextRequests);
+      setSessionLinks(
+        nextRequests.reduce((result, request) => {
+          result[request.id] = request.sessionLink || '';
+          return result;
+        }, {})
+      );
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setLoadingRequests(false);
+    }
   };
 
-  const handleSetAppointment = async () => {
-   
-      try {
-        const currentUser = auth.currentUser;
+  const handleSessionLinkChange = (appointmentId, value) => {
+    setSessionLinks((current) => ({ ...current, [appointmentId]: value }));
+  };
 
-        if (!currentUser) {
-          console.warn('No authenticated user');
-          return;
-        }
-        
-        const userId = currentUser.uid;
-        const userDocRef = doc(db, "therapists", userId);
-        
-        // Update the user document with the selected options
-     
-        
-       
+  const handleSessionLinkSave = async (appointmentId) => {
+    try {
+      setUpdatingId(appointmentId);
+      setErrorMessage('');
+      await updateAppointmentSessionLink(appointmentId, sessionLinks[appointmentId] || '');
+      await loadRequests();
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setUpdatingId('');
+    }
+  };
 
-        const updateData = {
-          selectedDays: selectedDays,
-          time: time
-        };
-   
-        // Update the user document with the selected options
-        await updateDoc(userDocRef, updateData, {merge: true});
-    
-        console.log('User data updated successfully');
-        setAppointmentSetSuccess(true); // Set success message visibility
-      } catch (error) {
-        console.error('Error updating user data:', error);
-      }
-    };
-    
-    // Here you can handle setting the appointment with selectedDays and time
-    console.log("Selected Days:", selectedDays);
-    console.log("Time:", time);
-    // You can perform further actions like sending the data to a server
-  
+  const openSessionLink = async (sessionLink) => {
+    if (!sessionLink) {
+      setErrorMessage('Add and save a video session link first.');
+      return;
+    }
+
+    try {
+      await Linking.openURL(sessionLink);
+    } catch (error) {
+      setErrorMessage('We could not open this session link.');
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const handleStatusUpdate = async (appointmentId, status) => {
+    try {
+      setUpdatingId(appointmentId);
+      setErrorMessage('');
+      await updateAppointmentStatus(appointmentId, status);
+      await loadRequests();
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setUpdatingId('');
+    }
+  };
+
   return (
-    <View className="flex-1 items-center justify-center  space-y-10  rounded-2xl   m-auto ">
-    <View>
-      <Text className="text-2xl font-bold text-center text-blue-400">Set Appointment</Text>
-    </View>
+    <Screen contentContainerStyle={styles.content}>
+      <Card>
+        <Text style={styles.title}>Appointment Requests</Text>
+        <Text style={styles.body}>
+          Review patient booking requests. Patients will see approved, pending, or rejected updates.
+        </Text>
 
-    <View>
-    <Text className="text-base font-bold">Select days available</Text>
+        {errorMessage ? <ErrorState title="Appointment issue" message={errorMessage} /> : null}
+        {loadingRequests ? <LoadingState message="Loading appointment requests..." /> : null}
 
-    <View className="flex-row space-x-4 mt-4">
-    <TouchableOpacity
-            onPress={() => toggleDaySelection("Monday")}
-            className={`border-2 justify-center ${selectedDays.Monday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Monday</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => toggleDaySelection("Tuesday")}
-            className={`border-2 justify-center ${selectedDays.Tuesday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Tuesday</Text>
-          </TouchableOpacity>
+        {!loadingRequests && requests.length === 0 ? (
+          <EmptyState
+            title="No appointment requests"
+            message="When patients request sessions with you, they will appear here."
+            action={<Button title="Update Availability" onPress={() => navigation.navigate('Availability')} />}
+          />
+        ) : null}
 
-    </View>
-     
-     <View className="flex-row space-x-4 mt-4">
-     <TouchableOpacity
-            onPress={() => toggleDaySelection("Wednesday")}
-            className={`border-2 justify-center ${selectedDays.Wednesday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Wednesday</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => toggleDaySelection("Thursday")}
-            className={`border-2 justify-center ${selectedDays.Thursday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Thursday</Text>
-          </TouchableOpacity>
+        {!loadingRequests &&
+          requests.map((request) => (
+            <View key={request.id} style={styles.requestCard}>
+              <View style={styles.requestHeader}>
+                <View style={styles.requestDetails}>
+                  <Text style={styles.requestTitle}>
+                    {request.patientName || request.patientEmail || 'Patient request'}
+                  </Text>
+                  <Text style={styles.requestMeta}>
+                    {formatAppointmentDate(request.appointmentDateTime)}
+                  </Text>
+                </View>
+                <View style={[styles.statusPill, styles[`status_${request.status || 'pending'}`]]}>
+                  <Text style={styles.statusText}>{request.status || 'pending'}</Text>
+                </View>
+              </View>
 
-    </View>
+              {request.status === 'pending' ? (
+                <View style={styles.requestActions}>
+                  <Button
+                    title="Approve"
+                    onPress={() => handleStatusUpdate(request.id, 'approved')}
+                    loading={updatingId === request.id}
+                    style={styles.requestButton}
+                  />
+                  <Button
+                    title="Reject"
+                    variant="outline"
+                    onPress={() => handleStatusUpdate(request.id, 'rejected')}
+                    disabled={updatingId === request.id}
+                    style={styles.requestButton}
+                  />
+                </View>
+              ) : null}
+              {['approved', 'confirmed'].includes(request.status) ? (
+                <View style={styles.sessionBox}>
+                  <Input
+                    label="Video session link"
+                    value={sessionLinks[request.id] || ''}
+                    onChangeText={(value) => handleSessionLinkChange(request.id, value)}
+                    placeholder="https://meet.google.com/..."
+                    autoCapitalize="none"
+                    keyboardType="url"
+                  />
+                  <View style={styles.requestActions}>
+                    <Button
+                      title="Save Link"
+                      onPress={() => handleSessionLinkSave(request.id)}
+                      loading={updatingId === request.id}
+                      style={styles.requestButton}
+                    />
+                    <Button
+                      title="Join"
+                      variant="outline"
+                      onPress={() => openSessionLink(request.sessionLink || sessionLinks[request.id])}
+                      disabled={!(request.sessionLink || sessionLinks[request.id])}
+                      style={styles.requestButton}
+                    />
+                  </View>
+                  <Button
+                    title="Message Patient"
+                    variant="secondary"
+                    onPress={() => navigation.navigate('SessionMessages', { appointment: request })}
+                  />
+                  <View style={styles.requestActions}>
+                    <Button
+                      title="Completed"
+                      variant="outline"
+                      onPress={() => handleStatusUpdate(request.id, 'completed')}
+                      disabled={updatingId === request.id}
+                      style={styles.requestButton}
+                    />
+                    <Button
+                      title="Missed"
+                      variant="outline"
+                      onPress={() => handleStatusUpdate(request.id, 'missed')}
+                      disabled={updatingId === request.id}
+                      style={styles.requestButton}
+                    />
+                    <Button
+                      title="Cancel"
+                      variant="danger"
+                      onPress={() => handleStatusUpdate(request.id, 'cancelled')}
+                      loading={updatingId === request.id}
+                      style={styles.requestButton}
+                    />
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ))}
 
-    <View className="flex-row space-x-4 mt-4">
-    <TouchableOpacity
-            onPress={() => toggleDaySelection("Friday")}
-            className={`border-2 justify-center ${selectedDays.Friday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Friday</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => toggleDaySelection("Saturday")}
-            className={`border-2 justify-center ${selectedDays.Saturday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Saturday</Text>
-          </TouchableOpacity>
-
-      
-      </View>
-
-      <View className="flex items-center mt-4">
-      <TouchableOpacity
-            onPress={() => toggleDaySelection("Sunday")}
-            className={`border-2 justify-center ${selectedDays.Sunday ? 'border-red-500 bg-red-500' : 'border-blue-500 bg-blue-500'} rounded-md h-10 w-40 shadow-lg shadow-gray-900`}
-          >
-            <Text className="text-lg font-bold text-slate-100 uppercase text-center">Sunday</Text>
-          </TouchableOpacity>
-
-      </View>
-    </View>
-
-    <View className=" mt-8 flex items-center">
-        <Text className="text-base font-bold">Set time available</Text>
-    <TextInput
-     className="border-2 h-16  border-gray-500 rounded-lg p-2 bg-white  mt-2 "
-          keyboardType="default"
-          multiline={true}
-          placeholder="use 24hrs format eg(8:00 - 16:00)"
-          value={time}
-          onChangeText={(text) => setTime(text)}
-     />
-    </View>
-    <View className="flex items-center">
-    <TouchableOpacity
-     onPress={handleSetAppointment}
-     className="justify-center items-center  bg-blue-500 rounded-full h-14 px-5"
-    >
-        <Text className="text-lg text-white">Set Appointment Schedule </Text>
-    </TouchableOpacity>
-    </View>
-     {/* Success message */}
-     {appointmentSetSuccess && (
-        <View className="mt-4">
-          <Text className="text-lg font-bold text-green-500 text-center">Appointment set successfully!</Text>
+        <View style={styles.actions}>
+          <Button title="Refresh Requests" variant="outline" onPress={loadRequests} />
+          <Button title="Update Availability" variant="secondary" onPress={() => navigation.navigate('Availability')} />
         </View>
-      )}
-    </View>
-  )
-}
+      </Card>
+    </Screen>
+  );
+};
 
-export default AppointmentT
+const styles = StyleSheet.create({
+  content: {
+    paddingTop: spacing.xl,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  body: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  requestCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  requestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  requestDetails: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  requestTitle: {
+    ...typography.subheading,
+    color: colors.primary,
+  },
+  requestMeta: {
+    ...typography.small,
+    fontWeight: '700',
+  },
+  requestActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  requestButton: {
+    flexGrow: 1,
+    flexBasis: '45%',
+  },
+  actions: {
+    gap: spacing.sm,
+  },
+  sessionBox: {
+    gap: spacing.sm,
+  },
+  statusPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  status_pending: {
+    backgroundColor: '#FFF6E5',
+  },
+  status_confirmed: {
+    backgroundColor: colors.successSoft,
+  },
+  status_approved: {
+    backgroundColor: colors.successSoft,
+  },
+  status_rejected: {
+    backgroundColor: colors.dangerSoft,
+  },
+  status_cancelled: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  status_completed: {
+    backgroundColor: colors.successSoft,
+  },
+  status_missed: {
+    backgroundColor: '#FFF6E5',
+  },
+  statusText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+});
+
+export default AppointmentT;

@@ -3,10 +3,8 @@ import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowSmallLeftIcon } from 'react-native-heroicons/solid';
-import { doc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { db, auth } from '../config/firebase';
 import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
+import { createPatientAccount } from '../services/patients';
 
 const PatientSignScreen = () => {
   const navigation = useNavigation();
@@ -25,27 +23,27 @@ const PatientSignScreen = () => {
    const [loading, setLoading] = useState(false); // Add loading state
 
   const checkPasswordsMatch = () => {
-    if (password === confirmPassword) {
-      setPasswordsMatch(true);
-    } else {
-      setPasswordsMatch(false);
-    }
+    const matches = password === confirmPassword;
+    setPasswordsMatch(matches);
+    return matches;
   };
 
   const signUp = async () => {
     try {
-      checkPasswordsMatch();
-      if (!passwordsMatch) {
+      setLoading(true);
+      setError(null);
+      if (!checkPasswordsMatch()) {
         setError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+      if (!email || !password || !firstName || !lastName) {
+        setError('Please fill in your name, email, and password.');
+        setLoading(false);
         return;
       }
 
-      const authUser = await createUserWithEmailAndPassword(auth, email, password);
-
-      const userDocRef = doc(db, "patients", authUser.user.uid);
-
-      const newPatient = {
-        uid: authUser.user.uid,
+      const patient = {
         firstName: firstName,
         lastName: lastName,
         email: email,
@@ -60,10 +58,9 @@ const PatientSignScreen = () => {
         therapistExperience: [],
       };
 
-      await setDoc(userDocRef, newPatient);
-      navigation.navigate('PatientDrawer');
+      await createPatientAccount({ email, password, patient });
     } catch (e) {
-      setError('Error signing up. Please try again.');
+      setError(e.message || 'Error signing up. Please try again.');
       console.error(e);
     }finally {
       setLoading(false); // Stop loading

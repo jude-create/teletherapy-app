@@ -1,139 +1,304 @@
-import React, { useEffect, useState } from 'react';
-import { TouchableOpacity, ScrollView } from 'react-native';
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { View, Text, Image } from 'react-native';
-import { auth, db } from '../config/firebase';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from 'react-native-heroicons/solid';
+import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, Screen } from '../components/ui';
+import { getCurrentUser, signOutUser } from '../services/auth';
+import { uploadProfileImage } from '../services/profileImages';
+import { getPatientByEmail, updatePatient } from '../services/patients';
+import { colors, spacing, typography } from '../theme';
+
+const Field = ({ label, value }) => (
+  <View style={styles.field}>
+    <Text style={styles.fieldLabel}>{label}</Text>
+    <Text style={styles.fieldValue}>{value || 'Not added yet'}</Text>
+  </View>
+);
+
+const ChipList = ({ items }) => {
+  if (!items?.length) {
+    return <Text style={styles.muted}>No preferences added yet.</Text>;
+  }
+
+  return (
+    <View style={styles.chipList}>
+      {items.map((item) => (
+        <View key={item} style={styles.chip}>
+          <Text style={styles.chipText}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
 
 const ProfileScreen = () => {
+  const navigation = useNavigation();
   const [userData, setUserData] = useState(null);
   const [selectedImageUri, setSelectedImageUri] = useState(null);
   const [imageChanged, setImageChanged] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        alert('Permission to access media library is required!');
+        setErrorMessage('Permission to access media library is required to update your photo.');
       }
     })();
   }, []);
 
+  const profileCompletion = useMemo(() => {
+    if (!userData) return 0;
+    const fields = [
+      userData.firstName,
+      userData.lastName,
+      userData.email,
+      userData.phoneNumber,
+      userData.birthDate,
+      userData.gender,
+      userData.relationshipStatus,
+      userData.selectedOption,
+      userData.therapistPreferences?.length,
+      userData.therapistExperience?.length,
+    ];
+    const completed = fields.filter(Boolean).length;
+    return Math.round((completed / fields.length) * 100);
+  }, [userData]);
+
   const pickImage = async () => {
     try {
-      const currentUser = auth.currentUser;
+      const currentUser = getCurrentUser();
       if (!currentUser) {
-        console.warn('No authenticated user');
+        setErrorMessage('You need to be signed in to update your profile image.');
         return;
       }
 
-      const userId = currentUser.uid;
-      let result = await ImagePicker.launchImageLibraryAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: [1, 1],
         quality: 1,
       });
 
       if (!result.canceled) {
-        setSelectedImageUri(result?.assets[0]?.uri);
+        const imageUri = result.assets[0].uri;
+        const imageUrl = await uploadProfileImage({
+          uid: currentUser.uid,
+          role: 'patients',
+          uri: imageUri,
+        });
+        setSelectedImageUri(imageUrl);
         setImageChanged(true);
-
-        const updatedUserData = { profileImage: result.assets[0].uri };
-        await setDoc(doc(db, 'patients', userId), updatedUserData, { merge: true });
-
-        console.log('Profile image updated successfully');
+        await updatePatient(currentUser.uid, { profileImage: imageUrl });
+        setUserData((current) => ({ ...current, profileImage: imageUrl }));
       }
     } catch (error) {
-      console.error('Error updating profile image:', error.message);
+      setErrorMessage(error.message);
     }
   };
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const currentUser = auth.currentUser;
+        const currentUser = getCurrentUser();
         if (!currentUser) {
-          console.warn('No authenticated user');
+          setErrorMessage('No authenticated user found.');
           return;
         }
-  
-        const patientsCollectionRef = collection(db, 'patients');
-        const q = query(patientsCollectionRef, where('email', '==', currentUser.email));
-        const querySnapshot = await getDocs(q);
-  
-        if (querySnapshot.size > 0) {
-          setUserData(querySnapshot.docs[0].data());
-        } else {
-          console.warn('No user data found for the authenticated user');
-        }
+
+        const patient = await getPatientByEmail(currentUser.email);
+        if (patient) setUserData(patient);
       } catch (error) {
-        console.error('Error fetching user data:', error.message);
+        setErrorMessage(error.message);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUserData();
   }, []);
 
+  if (loading) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState message="Loading your profile..." />
+      </Screen>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <Screen scroll={false}>
+        <EmptyState
+          title="No profile found"
+          message={errorMessage || 'We could not find patient details for this account.'}
+        />
+      </Screen>
+    );
+  }
+
+  const displayName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+
   return (
-    <ScrollView className="flex-1 bg-gray-100 px-4 py-6">
-      {/* Profile Image Section */}
-      <View className="items-center">
-        <View className="relative">
-          <Image
-            className="w-40 h-40 rounded-full border-4 border-blue-500 shadow-md"
-            source={imageChanged ? { uri: selectedImageUri } : require('../assets/minh.jpg')}
+    <Screen>
+      {errorMessage ? <ErrorState title="Profile notice" message={errorMessage} /> : null}
+
+      <Card style={styles.profileCard}>
+        <View style={styles.avatarWrap}>
+          <Avatar
+            source={
+              imageChanged
+                ? { uri: selectedImageUri }
+                : userData.profileImage
+                  ? { uri: userData.profileImage }
+                  : null
+            }
+            name={displayName || userData.email || 'Patient'}
+            size={136}
+            style={styles.avatar}
           />
-          <TouchableOpacity onPress={pickImage} className="absolute bottom-2 right-2 bg-white p-2 rounded-full shadow-md">
-            <CameraIcon size={28} color="#0A75AD" />
-          </TouchableOpacity>
+          <Pressable accessibilityRole="button" onPress={pickImage} style={styles.cameraButton}>
+            <CameraIcon size={24} color={colors.primary} />
+          </Pressable>
         </View>
-      </View>
+        <Text style={styles.name}>{displayName || 'Patient profile'}</Text>
+        <Text style={styles.email}>{userData.email}</Text>
+        <Button title="Edit Profile" variant="secondary" onPress={() => navigation.navigate('EditProfile')} />
+      </Card>
 
-      {/* User Info Section */}
-      {userData && (
-        <View className="mt-6 bg-white p-4 rounded-lg shadow-lg space-y-3">
-          {/* Name & Email */}
-          <View className="items-center space-y-1">
-            <Text className="text-2xl font-bold text-gray-800">
-              {userData.firstName} {userData.lastName}
-            </Text>
-            <Text className="text-lg text-gray-600">{userData.email}</Text>
-          </View>
-
-          {/* Contact Info */}
-          <View className="mt-4 border-t border-gray-300 pt-3">
-            <Text className="text-lg font-semibold text-blue-600">Contact Info:</Text>
-            <Text className="text-gray-700">{`📞 Phone: ${userData.phoneNumber}`}</Text>
-            <Text className="text-gray-700">{`🎂 Date of Birth: ${userData.birthDate}`}</Text>
-          </View>
-
-          {/* Additional Details */}
-          <View className="mt-4 border-t border-gray-300 pt-3">
-            <Text className="text-lg font-semibold text-blue-600">Personal Details:</Text>
-            <Text className="text-gray-700">{`👤 Gender: ${userData.gender}`}</Text>
-            <Text className="text-gray-700">{`💑 Relationship Status: ${userData.relationshipStatus}`}</Text>
-          </View>
-
-          {/* Preferences */}
-          <View className="mt-4 border-t border-gray-300 pt-3 pb-6">
-            <Text className="text-lg font-semibold text-blue-600">Therapy Preferences:</Text>
-            <Text className="text-gray-700">{`🛋️ Type of Therapy: ${userData.selectedOption}`}</Text>
-            <Text className="text-gray-700">{`💡 Therapist Preferences:`}</Text>
-            {userData.therapistPreferences &&
-              userData.therapistPreferences.map((preference, index) => (
-                <Text key={index} className="text-gray-700">- {preference}</Text>
-              ))}
-            <Text className="text-gray-700">{`📚 Experience in:`}</Text>
-            {userData.therapistExperience &&
-              userData.therapistExperience.map((experience, index) => (
-                <Text key={index} className="text-gray-700">- {experience}</Text>
-              ))}
-          </View>
+      <Card>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Profile completion</Text>
+          <Text style={styles.completionText}>{profileCompletion}%</Text>
         </View>
-      )}
-    </ScrollView>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${profileCompletion}%` }]} />
+        </View>
+      </Card>
+
+      <Card>
+        <Text style={styles.sectionTitle}>Contact info</Text>
+        <Field label="Phone" value={userData.phoneNumber} />
+        <Field label="Date of birth" value={userData.birthDate} />
+        <Field label="Address" value={userData.address} />
+      </Card>
+
+      <Card>
+        <Text style={styles.sectionTitle}>Personal details</Text>
+        <Field label="Gender" value={userData.gender} />
+        <Field label="Relationship status" value={userData.relationshipStatus} />
+      </Card>
+
+      <Card>
+        <Text style={styles.sectionTitle}>Therapy preferences</Text>
+        <Field label="Therapy type" value={userData.selectedOption} />
+        <Text style={styles.subsectionTitle}>Therapist preferences</Text>
+        <ChipList items={userData.therapistPreferences} />
+        <Text style={styles.subsectionTitle}>Preferred experience</Text>
+        <ChipList items={userData.therapistExperience} />
+      </Card>
+
+      <Button title="Logout" variant="outline" onPress={signOutUser} />
+    </Screen>
   );
 };
+
+const styles = StyleSheet.create({
+  profileCard: {
+    alignItems: 'center',
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatar: {
+    borderWidth: 4,
+    borderColor: colors.primarySoft,
+  },
+  cameraButton: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  name: {
+    ...typography.heading,
+    textAlign: 'center',
+  },
+  email: {
+    ...typography.small,
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    ...typography.subheading,
+  },
+  subsectionTitle: {
+    ...typography.small,
+    color: colors.text,
+    fontWeight: '700',
+    marginTop: spacing.sm,
+  },
+  completionText: {
+    ...typography.subheading,
+    color: colors.primary,
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+    backgroundColor: colors.success,
+  },
+  field: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    gap: spacing.xs,
+  },
+  fieldLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  fieldValue: {
+    ...typography.body,
+  },
+  muted: {
+    ...typography.small,
+  },
+  chipList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    borderRadius: 999,
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  chipText: {
+    ...typography.small,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+});
 
 export default ProfileScreen;

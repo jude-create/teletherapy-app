@@ -1,338 +1,295 @@
-import { View, Text,  TouchableOpacity,  StyleSheet, ScrollView} from 'react-native'
-import React, { useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { SparklesIcon } from "react-native-heroicons/solid"; 
-import { Image } from 'react-native';
-import { CheckBox } from 'react-native-elements';
-import { useNavigation } from "@react-navigation/native";
-import { addDoc, doc, getFirestore, collection, updateDoc, setDoc } from 'firebase/firestore';
-import { db, auth} from '../config/firebase';
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { CheckCircleIcon } from 'react-native-heroicons/solid';
+import { Button, Card, ErrorState, Header, Screen } from '../components/ui';
+import { getCurrentUser } from '../services/auth';
+import { savePatientQuestionnaire } from '../services/patients';
+import { colors, spacing, typography } from '../theme';
 
+const experienceOptions = [
+  'Depression',
+  'Stress and Anxiety',
+  'Coping with addictions',
+  'Relationship issues',
+  'Family conflicts',
+  'Trauma and abuse',
+  'Coping with grief and loss',
+  'Anger management',
+  'Bipolar disorder',
+  'Concentration, memory and focus',
+];
 
+const steps = [
+  {
+    key: 'selectedOption',
+    title: 'What type of therapy are you looking for?',
+    helper: 'Choose the care format that feels closest to what you need right now.',
+    type: 'single',
+    required: true,
+    options: ['Individual', 'Couples', 'Teen'],
+  },
+  {
+    key: 'gender',
+    title: 'What is your gender identity?',
+    helper: 'This helps your therapist understand how to address your profile.',
+    type: 'single',
+    required: true,
+    options: ['Female', 'Male', 'Prefer not to say'],
+  },
+  {
+    key: 'relationshipStatus',
+    title: 'What is your relationship status?',
+    helper: 'Select the option that best describes your current situation.',
+    type: 'single',
+    required: true,
+    options: ['Single', 'In a relationship', 'Married', 'Divorced', 'Widowed'],
+  },
+  {
+    key: 'therapistPreferences',
+    title: 'Therapist preferences',
+    helper: 'Choose any preferences that would help you feel comfortable.',
+    type: 'multi',
+    required: false,
+    options: [
+      'Male therapist',
+      'Female therapist',
+      'Christian-based therapist',
+      'Non-religious therapist',
+      'Older therapist (45+)',
+    ],
+  },
+  {
+    key: 'therapistExperience',
+    title: 'I prefer a therapist with experience in...',
+    helper: 'Select all areas that apply. You can update these later.',
+    type: 'multi',
+    required: true,
+    options: experienceOptions,
+  },
+];
 
-//first component
-const ComponentOne = ({ selectedOption, setSelectedOption, updateUserData }) => {
- 
-    const options = [
-        { id: 1, text: 'Individual' },
-        { id: 2, text: 'Couples' },
-        { id: 3, text: 'Teen' },
-      ];
-    
-      
-    
-      const handleOptionPress = (optionId) => {
-        setSelectedOption(optionId);
-        updateUserData(); 
-      };
-    
-    return (
-        <View className="space-y-5 p-2 flex-col items-center justify-center">
-      <Text className="font-bold text-lg ">What type of therapy are you looking for?</Text>
-      {options.map((option) => (
-        <TouchableOpacity
-        className="justify-center items-center border border-blue-500 bg-blue-500  rounded-full h-14 w-[360px]"
-          key={option.id}
-          style={[
-            selectedOption === option.text ? styles.selectedOption : null,
-            console.log(selectedOption)
-          ]}
-          onPress={() => handleOptionPress(option.text)}
-        >
-          <Text className="text-zinc-100 font-semibold text-base">{option.text}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
+const OptionCard = ({ label, selected, onPress }) => (
+  <Pressable
+    accessibilityRole="button"
+    onPress={onPress}
+    style={[styles.optionCard, selected && styles.optionCardSelected]}
+  >
+    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{label}</Text>
+    {selected ? <CheckCircleIcon size={22} color={colors.primary} /> : null}
+  </Pressable>
+);
+
+const Questionnaire = () => {
+  const navigation = useNavigation();
+  const [stepIndex, setStepIndex] = useState(0);
+  const [answers, setAnswers] = useState({
+    selectedOption: '',
+    gender: '',
+    relationshipStatus: '',
+    therapistPreferences: [],
+    therapistExperience: [],
+  });
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const currentStep = steps[stepIndex];
+  const progress = useMemo(() => ((stepIndex + 1) / steps.length) * 100, [stepIndex]);
+  const currentValue = answers[currentStep.key];
+
+  const hasAnswer = (step = currentStep) => {
+    const value = answers[step.key];
+    return Array.isArray(value) ? value.length > 0 : Boolean(value);
+  };
+
+  const selectOption = (option) => {
+    setErrorMessage('');
+    setAnswers((previous) => {
+      if (currentStep.type === 'multi') {
+        const current = previous[currentStep.key];
+        const next = current.includes(option)
+          ? current.filter((item) => item !== option)
+          : [...current, option];
+        return { ...previous, [currentStep.key]: next };
+      }
+
+      return { ...previous, [currentStep.key]: option };
+    });
+  };
+
+  const goBack = () => {
+    setErrorMessage('');
+    if (stepIndex === 0) {
+      navigation.navigate('PatientDrawer');
+      return;
+    }
+    setStepIndex((index) => index - 1);
+  };
+
+  const goNext = () => {
+    if (currentStep.required && !hasAnswer()) {
+      setErrorMessage('Please choose an option before continuing.');
+      return;
+    }
+
+    setErrorMessage('');
+    setStepIndex((index) => index + 1);
+  };
+
+  const submit = async () => {
+    const missingStep = steps.find((step) => step.required && !hasAnswer(step));
+    if (missingStep) {
+      setStepIndex(steps.indexOf(missingStep));
+      setErrorMessage('Please complete this step before submitting.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setErrorMessage('');
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        setErrorMessage('You need to be signed in to save your questionnaire.');
+        return;
+      }
+
+      await savePatientQuestionnaire(currentUser.uid, answers);
+      navigation.navigate('PatientDrawer');
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isLastStep = stepIndex === steps.length - 1;
+
+  return (
+    <Screen contentContainerStyle={styles.content}>
+      <Header title="VirtualMindSpace" subtitle="Patient questionnaire" />
+
+      <Card>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>
+            Step {stepIndex + 1} of {steps.length}
+          </Text>
+          <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        </View>
+      </Card>
+
+      <Card>
+        <Text style={styles.title}>{currentStep.title}</Text>
+        <Text style={styles.helper}>{currentStep.helper}</Text>
+
+        {errorMessage ? <ErrorState title="Questionnaire issue" message={errorMessage} /> : null}
+
+        <View style={styles.options}>
+          {currentStep.options.map((option) => {
+            const selected = Array.isArray(currentValue)
+              ? currentValue.includes(option)
+              : currentValue === option;
+            return (
+              <OptionCard
+                key={option}
+                label={option}
+                selected={selected}
+                onPress={() => selectOption(option)}
+              />
+            );
+          })}
+        </View>
+      </Card>
+
+      <View style={styles.actions}>
+        <Button title="Back" variant="outline" onPress={goBack} style={styles.actionButton} />
+        <Button
+          title={isLastStep ? 'Submit' : 'Next'}
+          onPress={isLastStep ? submit : goNext}
+          loading={saving}
+          style={styles.actionButton}
+        />
+      </View>
+    </Screen>
   );
 };
 
-
-  //second component
-  const ComponentTwo = ({ selected, setSelected, updateUserData }) => {
-    const options = [
-        { id: 1, text: 'Female' },
-        { id: 2, text: 'Male' },
-       
-      ];
-
-      const handleOptionPress = (optionId) => {
-        setSelected(optionId);
-        updateUserData(); 
-      };
-    return (
-        <View className="space-y-5 p-2 flex-col items-center justify-center">
-        <Text className="font-bold text-lg ">What is your gender identity?</Text>
-        {options.map((option) => (
-          <TouchableOpacity
-          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-full  h-14 w-[360px]"
-            key={option.id}
-            style={[
-              selected === option.text ? styles.selectedOption : null,
-              console.log(selected)
-            ]}
-            onPress={() => handleOptionPress(option.text)}
-          >
-            <Text className="text-zinc-100 font-semibold text-base">{option.text}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  }
-
-  //third component
-  const ComponentThree = ({ selectedOption2, setSelectedOption2, updateUserData }) => {
-    const options = [
-        { id: 1, text: 'Single' },
-        { id: 2, text: 'In a relationship' },
-        { id: 3, text: 'Married' },
-        { id: 4, text: 'Divorced' },
-        { id: 5, text: 'Widowed' },
-       
-      ];
-
-      const handleOptionPress = (optionId) => {
-        setSelectedOption2(optionId);
-        updateUserData(); 
-      };
-    return (
-        <View className="space-y-5 p-2 flex-col items-center justify-center">
-        <Text className="font-bold text-lg ">What is your relationship status?</Text>
-        {options.map((option) => (
-          <TouchableOpacity
-          className="justify-center items-center border border-blue-500 bg-blue-500 rounded-full  h-14 w-[360px]"
-            key={option.id}
-            style={[
-              selectedOption2 === option.text ? styles.selectedOption : null,
-              console.log(selectedOption2)
-            ]}
-            onPress={() => handleOptionPress(option.text)}
-          >
-            <Text className="text-zinc-100 font-semibold text-base">{option.text}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  }
-
-  //COMPONENT FOUR
-  const ComponentFour = ({ selectedBox, setSelectedBox, updateUserData }) => {
-    const handleCheckboxToggle = (option) => {
-      if (selectedBox.includes(option)) {
-        setSelectedBox(selectedBox.filter((item) => item !== option));
-        console.log(selectedBox);
-      } else {
-        setSelectedBox([...selectedBox, option]);
-      }
-      updateUserData(); 
-    };
-  
-    return (
-      <View className=" p-2 ">
-        <Text className="font-bold text-lg text-center pb-2">Therapist preferences:</Text>
-        <CheckBox
-          title="Male therapist"
-          checked={selectedBox.includes('Male therapist')}
-          onPress={() => handleCheckboxToggle('Male therapist')}
-        />
-        <CheckBox
-          title="Female therapist"
-          checked={selectedBox.includes('Female therapist')}
-          onPress={() => handleCheckboxToggle('Female therapist')}
-        />
-        <CheckBox
-          title="Christian-based therapist"
-          checked={selectedBox.includes('Christian-based therapist')}
-          onPress={() => handleCheckboxToggle('Christian-based therapist')}
-        />
-        <CheckBox
-          title="Non-religious therapist "
-          checked={selectedBox.includes('Non-religious therapist')}
-          onPress={() => handleCheckboxToggle('Non-religious therapist')}
-        />
-        <CheckBox
-          title="Older therapist (45+)"
-          checked={selectedBox.includes('Older therapist (45+)')}
-          onPress={() => handleCheckboxToggle('Older therapist (45+)')}
-        />
-       
-      </View>
-    );
-  };
-  
-
-   
-  const ComponentFive = ({ selectedBox2, setSelectedBox2, updateUserData }) => {
-
-    const navigation = useNavigation();
-    const handleCheckboxToggle = (option) => {
-      if (selectedBox2.includes(option)) {
-        setSelectedBox2(selectedBox2.filter((item) => item !== option));
-        console.log(selectedBox2);
-      } else {
-        setSelectedBox2([...selectedBox2, option]);
-      }
-      updateUserData(); 
-    };
-  
-    return (
-      <ScrollView className=" px-2">
-        <Text className="font-bold text-lg text-center pb-2">I prefer a therapist with experience in...</Text>
-        <CheckBox
-          title="Depression"
-          checked={selectedBox2.includes('Depression')}
-          onPress={() => handleCheckboxToggle('Depression')}
-        />
-        <CheckBox
-          title="Stress and Anxiety"
-          checked={selectedBox2.includes('Stress and Anxiety')}
-          onPress={() => handleCheckboxToggle('Stress and Anxiety')}
-        />
-        <CheckBox
-          title="Coping with addictions"
-          checked={selectedBox2.includes('Coping with addictions')}
-          onPress={() => handleCheckboxToggle('Coping with addictions')}
-        />
-        <CheckBox
-          title="Relationship issues "
-          checked={selectedBox2.includes('Relationship issues')}
-          onPress={() => handleCheckboxToggle('Relationship issues')}
-        />
-        <CheckBox
-          title="Family conflicts"
-          checked={selectedBox2.includes('Family conflicts')}
-          onPress={() => handleCheckboxToggle('Family conflicts')}
-        />
-         <CheckBox
-          title="Trauma and abuse"
-          checked={selectedBox2.includes('Trauma and abuse')}
-          onPress={() => handleCheckboxToggle('Trauma and abuse')}
-        />
-         <CheckBox
-          title="Coping with grief and loss"
-          checked={selectedBox2.includes('Coping with grief and loss')}
-          onPress={() => handleCheckboxToggle('Coping with grief and loss')}
-        />
-         <CheckBox
-          title="Anger management"
-          checked={selectedBox2.includes('Anger management')}
-          onPress={() => handleCheckboxToggle('Anger management')}
-        />
-         <CheckBox
-          title="Bipolar disorder"
-          checked={selectedBox2.includes('Bipolar disorder')}
-          onPress={() => handleCheckboxToggle('Bipolar disorder')}
-        />
-         <CheckBox
-          title="Concentration,memory and focus"
-          checked={selectedBox2.includes('Family conflicts')}
-          onPress={() => handleCheckboxToggle('Family conflicts')}
-        />
-        <TouchableOpacity
-          onPress={()=> navigation.navigate('PatientDrawer')}
-         className="justify-center items-center mb-10 mt-4 h-14 bg-blue-600  rounded-full  w-[360px] mx-auto ">
-          <Text>Submit</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
-  };
-
- 
-
-  
-  
-  const Questionnaire = () => {
-    const [activeComponent, setActiveComponent] = useState(1);
-    const [selectedOption, setSelectedOption] = useState();
-    const [selected, setSelected] = useState();
-    const [selectedOption2, setSelectedOption2] = useState();
-    const [selectedBox, setSelectedBox] = useState([]);
-    const [selectedBox2, setSelectedBox2] = useState([]);
-  
-    const [message, setMessage] = useState(""); // Success or error message
-    const [messageType, setMessageType] = useState(""); // "success" or "error"
-  
-    const updateUserData = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          setMessage("No authenticated user");
-          setMessageType("error");
-          return;
-        }
-  
-        const userId = currentUser.uid;
-        const userDocRef = doc(db, "patients", userId);
-  
-        const updateData = {};
-        if (selectedOption) updateData.selectedOption = selectedOption;
-        if (selected) updateData.gender = selected;
-        if (selectedOption2) updateData.relationshipStatus = selectedOption2;
-        if (selectedBox.length > 0) updateData.therapistPreferences = selectedBox;
-        if (selectedBox2.length > 0) updateData.therapistExperience = selectedBox2;
-  
-        await updateDoc(userDocRef, updateData, { merge: true });
-  
-        setMessage("User data updated successfully!");
-        setMessageType("success");
-      } catch (error) {
-        setMessage(`Error updating user data: ${error.message}`);
-        setMessageType("error");
-      }
-    };
-  
-    const components = {
-      1: <ComponentOne selectedOption={selectedOption} setSelectedOption={setSelectedOption} updateUserData={updateUserData} />,
-      2: <ComponentTwo selected={selected} setSelected={setSelected} updateUserData={updateUserData} />,
-      3: <ComponentThree selectedOption2={selectedOption2} setSelectedOption2={setSelectedOption2} updateUserData={updateUserData} />,
-      4: <ComponentFour selectedBox={selectedBox} setSelectedBox={setSelectedBox} updateUserData={updateUserData} />,
-      5: <ComponentFive selectedBox2={selectedBox2} setSelectedBox2={setSelectedBox2} updateUserData={updateUserData} />,
-    };
-  
-    return (
-      <SafeAreaView className="flex-1 bg-zinc-200">
-        {/* Header */}
-        <View className="border-1 border-blue-500 bg-blue-600 h-[130px] flex-row  gap-14">
-        <View className="flex-row  pt-3 px-2 items-center">
-          <SparklesIcon size={40} color="#f5f5dc" />
-          <Text className="font-bold uppercase text-yellow-50 text-lg">VirtualMindSpace</Text>
-        </View>
-        </View>
-  
-        {/* Success or Error Message */}
-        {message && (
-          <View className={`p-4 mx-4 my-2 rounded-lg ${messageType === "success" ? "bg-green-500" : "bg-red-500"}`}>
-            <Text className="text-white font-semibold">{message}</Text>
-          </View>
-        )}
-  
-        {/* Component Switching */}
-        <View className=" flex-1  justify-center">
-          {components[activeComponent]}
-          <View className="flex-row gap-6 items-end mt-2 p-2 px-8">
-            {[1, 2, 3, 4, 5].map((componentNumber) => (
-              <TouchableOpacity
-                key={componentNumber}
-                className={`border-4 border-gray-500 w-12 h-3 ${activeComponent === componentNumber ? 'bg-blue-600' : ''}`}
-                onPress={() => setActiveComponent(componentNumber)}
-              />
-            ))}
-          </View>
-        </View>
-  
-       
-      </SafeAreaView>
-    );
-  };
-
- 
-
 const styles = StyleSheet.create({
-  selectedOption: {
-    borderColor: 'white',
-    backgroundColor: 'darkblue',
+  content: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  progressLabel: {
+    ...typography.small,
+    fontWeight: '800',
+  },
+  progressPercent: {
+    ...typography.small,
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+    backgroundColor: colors.success,
+  },
+  title: {
+    ...typography.heading,
+    color: colors.primary,
+  },
+  helper: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  options: {
+    gap: spacing.sm,
+  },
+  optionCard: {
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  optionCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  optionText: {
+    ...typography.body,
+    flex: 1,
+  },
+  optionTextSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  actionButton: {
+    flex: 1,
   },
 });
 
-  
-  export default Questionnaire;
-  
+export default Questionnaire;

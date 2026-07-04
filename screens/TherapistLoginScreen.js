@@ -6,9 +6,8 @@ import {  SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from 'expo-status-bar';
 import { TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../config/firebase';
 import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
+import { signIn } from '../services/auth';
 
 const TherapistLoginScreen = () => {
     const navigation = useNavigation();
@@ -31,12 +30,7 @@ const TherapistLoginScreen = () => {
         setLoading(true); // Start loading
         setErrorMessage(""); // Clear any previous error messages
         try {
-          // Sign in with email and password
-          await signInWithEmailAndPassword(auth, email, password);
-    
-          // Navigate to the desired screen after successful sign-in
-          // Replace "PatientDrawer" with the screen you want to navigate to
-          navigation.navigate('TherapistDrawer');
+          await signIn(email, password);
         } catch (error) {
           
           setErrorMessage("Invalid email or password");
@@ -98,7 +92,7 @@ const TherapistLoginScreen = () => {
                 Don't have an account? 
             </Text>
           <TouchableOpacity
-           onPress={() => navigation.navigate("Auth", {screen: "Register"})}
+           onPress={() => navigation.navigate("Register")}
           >
             <Text className=" text-blue-700 underline text-sm">
               Create an account

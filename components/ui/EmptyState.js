@@ -1,17 +1,23 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, useTheme } from '../../theme';
 import Button from './Button';
 
-const EmptyState = ({ title, message, actionLabel, onAction }) => (
-  <View style={styles.state}>
-    <Text style={styles.title}>{title}</Text>
-    {message ? <Text style={styles.message}>{message}</Text> : null}
-    {actionLabel && onAction ? (
-      <Button title={actionLabel} onPress={onAction} variant="secondary" />
-    ) : null}
-  </View>
-);
+const EmptyState = ({ title, message, action, actionLabel, onAction }) => {
+  const { colors, typography } = useTheme();
+
+  return (
+    <View style={styles.state}>
+      <Text style={[styles.title, typography.subheading, { color: colors.text }]}>{title}</Text>
+      {message ? (
+        <Text style={[styles.message, typography.body, { color: colors.textMuted }]}>{message}</Text>
+      ) : null}
+      {action || (actionLabel && onAction ? (
+        <Button title={actionLabel} onPress={onAction} variant="secondary" />
+      ) : null)}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   state: {
@@ -22,12 +28,9 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   title: {
-    ...typography.subheading,
     textAlign: 'center',
   },
   message: {
-    ...typography.body,
-    color: colors.textMuted,
     textAlign: 'center',
   },
 });

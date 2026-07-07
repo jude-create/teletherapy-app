@@ -1,12 +1,14 @@
 {
   "expo": {
     "name": "teletherapy-app",
+    "owner": "jude_create",
     "slug": "teletherapy-app",
     "scheme": "teletherapyapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": false,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,7 +21,13 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.jude_create.teletherapyapp",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "INTERNET",
+        "RECORD_AUDIO",
+        "VIBRATE"
+      ],
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,11 +37,15 @@
         "projectId": "9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
       }
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
       "url": "https://u.expo.dev/9289dbb6-556a-4ddc-ba67-ff5b3c1f9381"
     },
     "plugins": [
+      "expo-dev-client",
+      "expo-updates",
       "expo-asset",
       "expo-font",
       [

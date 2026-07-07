@@ -1,16 +1,16 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
-  BellIcon,
-  CalendarIcon,
-  ExclamationTriangleIcon,
+  CalendarDaysIcon,
+  ChatBubbleLeftRightIcon,
   SparklesIcon,
   UserIcon,
+  UserGroupIcon,
 } from 'react-native-heroicons/solid';
 import TherapistHomeScreen from '../screens/TherapistHomeScreen';
 import SessionMessages from '../screens/SessionMessages';
-import SafetySupportScreen from '../screens/SafetySupportScreen';
-import Notifications from '../patients/Notifications';
+import Clients from '../therapist/Clients';
+import Messages from '../therapist/Messages';
 import Questions from '../therapist/Questions';
 import ProfileT from '../therapist/ProfileT';
 import AppointmentT from '../therapist/AppointmentT';
@@ -22,10 +22,10 @@ const Stack = createNativeStackNavigator();
 
 const therapistTabs = [
   { name: 'Home', label: 'Home', component: TherapistHomeScreen, Icon: SparklesIcon },
+  { name: 'Clients', label: 'Clients', component: Clients, Icon: UserGroupIcon },
+  { name: 'Schedule', label: 'Schedule', component: AppointmentT, Icon: CalendarDaysIcon },
+  { name: 'Messages', label: 'Messages', component: Messages, Icon: ChatBubbleLeftRightIcon },
   { name: 'Profile', label: 'Profile', component: ProfileT, Icon: UserIcon },
-  { name: 'Appointment', label: 'Visits', component: AppointmentT, Icon: CalendarIcon },
-  { name: 'Notification', label: 'Alerts', component: Notifications, Icon: BellIcon },
-  { name: 'Safety', label: 'Safety', component: SafetySupportScreen, Icon: ExclamationTriangleIcon },
 ];
 
 export const TherapistTabs = () => <BottomTabShell tabs={therapistTabs} />;
@@ -39,7 +39,6 @@ const TherapistNavigator = () => (
     <Stack.Screen name="Questions" component={Questions} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     <Stack.Screen name="SessionMessages" component={SessionMessages} />
-    <Stack.Screen name="SafetySupport" component={SafetySupportScreen} />
   </Stack.Navigator>
 );
 

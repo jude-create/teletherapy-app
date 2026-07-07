@@ -1,21 +1,34 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, radius, shadows, spacing } from '../../theme';
+import { radius, spacing, useTheme } from '../../theme';
 
-const Card = ({ children, style }) => (
-  <View style={[styles.card, style]}>{children}</View>
-);
+const Card = ({ children, style }) => {
+  const { colors, shadows } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          ...shadows.sm,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.lg,
     gap: spacing.md,
-    ...shadows.sm,
   },
 });
 

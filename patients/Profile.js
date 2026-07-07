@@ -3,20 +3,20 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CameraIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, Screen } from '../components/ui';
+import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, Screen, ThemeModeSelector } from '../components/ui';
 import { getCurrentUser, signOutUser } from '../services/auth';
 import { uploadProfileImage } from '../services/profileImages';
 import { getPatientByEmail, updatePatient } from '../services/patients';
-import { colors, spacing, typography } from '../theme';
+import { spacing, useTheme } from '../theme';
 
-const Field = ({ label, value }) => (
+const Field = ({ label, value, styles }) => (
   <View style={styles.field}>
     <Text style={styles.fieldLabel}>{label}</Text>
     <Text style={styles.fieldValue}>{value || 'Not added yet'}</Text>
   </View>
 );
 
-const ChipList = ({ items }) => {
+const ChipList = ({ items, styles }) => {
   if (!items?.length) {
     return <Text style={styles.muted}>No preferences added yet.</Text>;
   }
@@ -34,6 +34,8 @@ const ChipList = ({ items }) => {
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
   const [userData, setUserData] = useState(null);
   const [selectedImageUri, setSelectedImageUri] = useState(null);
   const [imageChanged, setImageChanged] = useState(false);
@@ -168,6 +170,10 @@ const ProfileScreen = () => {
       </Card>
 
       <Card>
+        <ThemeModeSelector />
+      </Card>
+
+      <Card>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Profile completion</Text>
           <Text style={styles.completionText}>{profileCompletion}%</Text>
@@ -179,32 +185,37 @@ const ProfileScreen = () => {
 
       <Card>
         <Text style={styles.sectionTitle}>Contact info</Text>
-        <Field label="Phone" value={userData.phoneNumber} />
-        <Field label="Date of birth" value={userData.birthDate} />
-        <Field label="Address" value={userData.address} />
+        <Field label="Phone" value={userData.phoneNumber} styles={styles} />
+        <Field label="Date of birth" value={userData.birthDate} styles={styles} />
+        <Field label="Address" value={userData.address} styles={styles} />
       </Card>
 
       <Card>
         <Text style={styles.sectionTitle}>Personal details</Text>
-        <Field label="Gender" value={userData.gender} />
-        <Field label="Relationship status" value={userData.relationshipStatus} />
+        <Field label="Gender" value={userData.gender} styles={styles} />
+        <Field label="Relationship status" value={userData.relationshipStatus} styles={styles} />
       </Card>
 
       <Card>
         <Text style={styles.sectionTitle}>Therapy preferences</Text>
-        <Field label="Therapy type" value={userData.selectedOption} />
+        <Field label="Therapy type" value={userData.selectedOption} styles={styles} />
         <Text style={styles.subsectionTitle}>Therapist preferences</Text>
-        <ChipList items={userData.therapistPreferences} />
+        <ChipList items={userData.therapistPreferences} styles={styles} />
         <Text style={styles.subsectionTitle}>Preferred experience</Text>
-        <ChipList items={userData.therapistExperience} />
+        <ChipList items={userData.therapistExperience} styles={styles} />
       </Card>
 
-      <Button title="Logout" variant="outline" onPress={signOutUser} />
+      <Button
+        title="Logout"
+        variant="outline"
+        textStyle={{ color: colors.danger }}
+        onPress={signOutUser}
+      />
     </Screen>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, typography) => StyleSheet.create({
   profileCard: {
     alignItems: 'center',
   },

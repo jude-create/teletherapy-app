@@ -13,19 +13,9 @@ import { getCurrentUser } from '../services/auth';
 import { formatAppointmentDate, getAppointmentsForTherapist } from '../services/appointments';
 import { getSlotsFromTherapist } from '../services/availability';
 import { getTherapistByEmail } from '../services/therapists';
-import { colors, spacing, typography } from '../theme';
+import { spacing, useTheme } from '../theme';
 
-const statusColors = {
-  pending: colors.warning,
-  confirmed: colors.success,
-  approved: colors.success,
-  rejected: colors.danger,
-  cancelled: colors.textMuted,
-  completed: colors.success,
-  missed: colors.warning,
-};
-
-const StatCard = ({ Icon, label, value, color }) => (
+const StatCard = ({ Icon, label, value, color, styles }) => (
   <Card style={styles.statCard}>
     <View style={[styles.iconBadge, { backgroundColor: `${color}1A` }]}>
       <Icon size={22} color={color} />
@@ -37,6 +27,8 @@ const StatCard = ({ Icon, label, value, color }) => (
 
 const TherapistHomeScreen = () => {
   const navigation = useNavigation();
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
   const [profile, setProfile] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +74,15 @@ const TherapistHomeScreen = () => {
       profile?.yearsExperience !== ''
   );
   const verificationStatus = profile?.verificationStatus || (profile?.verified ? 'approved' : 'pending');
+  const statusColors = {
+    pending: colors.warning,
+    confirmed: colors.success,
+    approved: colors.success,
+    rejected: colors.danger,
+    cancelled: colors.textMuted,
+    completed: colors.success,
+    missed: colors.warning,
+  };
 
   useEffect(() => {
     if (!loading && profile && !profile.onboardingCompleted) {
@@ -117,7 +118,7 @@ const TherapistHomeScreen = () => {
         </Text>
         <Text style={styles.heroText}>
           {pendingRequests.length
-            ? 'Patients are waiting for approval. Review requests and respond from your Visits tab.'
+            ? 'Patients are waiting for approval. Review requests and respond from your Schedule tab.'
             : verificationStatus === 'approved'
               ? 'Keep your availability and clinical profile updated so patients can book confidently.'
               : 'Your profile must be approved by admin before patients can find and book you.'}
@@ -130,13 +131,14 @@ const TherapistHomeScreen = () => {
       </Card>
 
       <View style={styles.statsGrid}>
-        <StatCard Icon={ClockIcon} label="Pending" value={pendingRequests.length} color={colors.warning} />
-        <StatCard Icon={CalendarDaysIcon} label="Approved" value={approvedSessions.length} color={colors.success} />
+        <StatCard Icon={ClockIcon} label="Pending" value={pendingRequests.length} color={colors.warning} styles={styles} />
+        <StatCard Icon={CalendarDaysIcon} label="Approved" value={approvedSessions.length} color={colors.success} styles={styles} />
         <StatCard
           Icon={ClipboardDocumentCheckIcon}
           label="Profile"
           value={profileReady ? 'Ready' : 'Review'}
           color={colors.primary}
+          styles={styles}
         />
       </View>
 
@@ -203,14 +205,14 @@ const TherapistHomeScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, typography) => StyleSheet.create({
   content: {
     paddingHorizontal: 0,
     paddingTop: 0,
   },
   heroCard: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
     gap: spacing.lg,
   },
   heroTopRow: {
@@ -235,13 +237,13 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     ...typography.caption,
-    color: colors.white,
+    color: colors.onBrand,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   heroTitle: {
     ...typography.heading,
-    color: colors.white,
+    color: colors.onBrand,
   },
   heroText: {
     ...typography.body,

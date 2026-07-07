@@ -9,3 +9,5 @@ export { default as IconBadge } from './IconBadge';
 export { default as Input } from './Input';
 export { default as LoadingState } from './LoadingState';
 export { default as Screen } from './Screen';
+export { default as ThemeModeSelector } from './ThemeModeSelector';
+export { default as ThemeToggle } from './ThemeToggle';

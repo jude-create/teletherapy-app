@@ -3,21 +3,21 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { CameraIcon } from 'react-native-heroicons/solid';
 import * as ImagePicker from 'expo-image-picker';
-import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, Screen } from '../components/ui';
+import { Avatar, Button, Card, EmptyState, ErrorState, LoadingState, Screen, ThemeModeSelector } from '../components/ui';
 import { getCurrentUser, signOutUser } from '../services/auth';
 import { formatSlotLabel, getSlotsFromTherapist } from '../services/availability';
 import { uploadProfileImage } from '../services/profileImages';
 import { getTherapistByUid, updateTherapist } from '../services/therapists';
-import { colors, spacing, typography } from '../theme';
+import { spacing, useTheme } from '../theme';
 
-const Field = ({ label, value }) => (
+const Field = ({ label, value, styles }) => (
   <View style={styles.field}>
     <Text style={styles.fieldLabel}>{label}</Text>
     <Text style={styles.fieldValue}>{value || 'Not added yet'}</Text>
   </View>
 );
 
-const ChipList = ({ items }) => {
+const ChipList = ({ items, styles }) => {
   if (!items?.length) {
     return <Text style={styles.muted}>No details added yet.</Text>;
   }
@@ -35,6 +35,8 @@ const ChipList = ({ items }) => {
 
 const ProfileT = () => {
   const navigation = useNavigation();
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
   const [userData, setUserData] = useState(null);
   const [selectedImageUri, setSelectedImageUri] = useState(null);
   const [imageChanged, setImageChanged] = useState(false);
@@ -198,6 +200,10 @@ const ProfileT = () => {
       </Card>
 
       <Card>
+        <ThemeModeSelector />
+      </Card>
+
+      <Card>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Profile completion</Text>
           <Text style={styles.completionText}>{profileCompletion}%</Text>
@@ -209,27 +215,27 @@ const ProfileT = () => {
 
       <Card>
         <Text style={styles.sectionTitle}>Professional details</Text>
-        <Field label="Phone" value={userData.phone} />
-        <Field label="Age" value={userData.age} />
-        <Field label="License number" value={userData.license} />
-        <Field label="Bio" value={userData.bio || userData.text} />
+        <Field label="Phone" value={userData.phone} styles={styles} />
+        <Field label="Age" value={userData.age} styles={styles} />
+        <Field label="License number" value={userData.license} styles={styles} />
+        <Field label="Bio" value={userData.bio || userData.text} styles={styles} />
       </Card>
 
       <Card>
         <Text style={styles.sectionTitle}>Clinical focus</Text>
         <Text style={styles.subsectionTitle}>Therapy types</Text>
-        <ChipList items={userData.therapyTypes || (Array.isArray(userData.selectedOption) ? userData.selectedOption : [userData.selectedOption].filter(Boolean))} />
+        <ChipList styles={styles} items={userData.therapyTypes || (Array.isArray(userData.selectedOption) ? userData.selectedOption : [userData.selectedOption].filter(Boolean))} />
         <Text style={styles.subsectionTitle}>Profile preferences</Text>
-        <ChipList items={userData.preferredPatientGroups || userData.therapistProfile} />
+        <ChipList styles={styles} items={userData.preferredPatientGroups || userData.therapistProfile} />
         <Text style={styles.subsectionTitle}>Experience</Text>
-        <Field label="Years of experience" value={userData.yearsExperience} />
-        <ChipList items={userData.specialties || userData.therapistExperiences} />
+        <Field label="Years of experience" value={userData.yearsExperience} styles={styles} />
+        <ChipList styles={styles} items={userData.specialties || userData.therapistExperiences} />
       </Card>
 
       <Card>
         <Text style={styles.sectionTitle}>Availability</Text>
-        <ChipList items={availabilitySlots.length ? availabilitySlots.map(formatSlotLabel) : availableDays} />
-        {!availabilitySlots.length ? <Field label="Time window" value={userData.time} /> : null}
+        <ChipList styles={styles} items={availabilitySlots.length ? availabilitySlots.map(formatSlotLabel) : availableDays} />
+        {!availabilitySlots.length ? <Field label="Time window" value={userData.time} styles={styles} /> : null}
         <Button
           title="Edit Availability"
           variant="outline"
@@ -242,12 +248,17 @@ const ProfileT = () => {
         onPress={() => navigation.navigate('EditProfile')}
       />
 
-      <Button title="Logout" variant="outline" onPress={signOutUser} />
+      <Button
+        title="Logout"
+        variant="outline"
+        textStyle={{ color: colors.danger }}
+        onPress={signOutUser}
+      />
     </Screen>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, typography) => StyleSheet.create({
   profileCard: {
     alignItems: 'center',
   },
@@ -284,7 +295,7 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     borderRadius: 999,
-    backgroundColor: '#FFF6E5',
+    backgroundColor: colors.warningSoft,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },

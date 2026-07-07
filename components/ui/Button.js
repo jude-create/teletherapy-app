@@ -1,11 +1,11 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme';
+import { radius, spacing, useTheme } from '../../theme';
 
-const variants = {
+const getVariants = (colors) => ({
   primary: {
     button: { backgroundColor: colors.primary, borderColor: colors.primary },
-    text: { color: colors.white },
+    text: { color: colors.background },
   },
   secondary: {
     button: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
@@ -23,7 +23,7 @@ const variants = {
     button: { backgroundColor: 'transparent', borderColor: 'transparent' },
     text: { color: colors.primary },
   },
-};
+});
 
 const Button = ({
   title,
@@ -36,6 +36,8 @@ const Button = ({
   textStyle,
   leftIcon,
 }) => {
+  const { colors, typography } = useTheme();
+  const variants = getVariants(colors);
   const selected = variants[variant] || variants.primary;
 
   return (
@@ -51,7 +53,7 @@ const Button = ({
       ]}
     >
       {loading ? <ActivityIndicator color={selected.text.color} /> : leftIcon}
-      <Text style={[styles.text, selected.text, textStyle]}>{children || title}</Text>
+      <Text style={[styles.text, typography.body, selected.text, textStyle]}>{children || title}</Text>
     </Pressable>
   );
 };
@@ -70,7 +72,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   text: {
-    ...typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },

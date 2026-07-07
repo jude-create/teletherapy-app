@@ -1,13 +1,17 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, useTheme } from '../../theme';
 
-const LoadingState = ({ message = 'Loading...' }) => (
-  <View style={styles.state}>
-    <ActivityIndicator size="large" color={colors.primary} />
-    <Text style={styles.message}>{message}</Text>
-  </View>
-);
+const LoadingState = ({ message = 'Loading...' }) => {
+  const { colors, typography } = useTheme();
+
+  return (
+    <View style={styles.state}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.message, typography.small, { color: colors.textMuted }]}>{message}</Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   state: {
@@ -18,7 +22,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   message: {
-    ...typography.small,
     textAlign: 'center',
   },
 });

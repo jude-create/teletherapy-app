@@ -12,19 +12,9 @@ import { Button, Card, Header, LoadingState, Screen } from '../components/ui';
 import { getCurrentUser } from '../services/auth';
 import { formatAppointmentDate, getAppointmentsForPatient } from '../services/appointments';
 import { getPatientByEmail } from '../services/patients';
-import { colors, spacing, typography } from '../theme';
+import { spacing, useTheme } from '../theme';
 
-const statusStyles = {
-  pending: colors.warning,
-  confirmed: colors.success,
-  approved: colors.success,
-  rejected: colors.danger,
-  cancelled: colors.textMuted,
-  completed: colors.success,
-  missed: colors.warning,
-};
-
-const StatCard = ({ Icon, label, value, color }) => (
+const StatCard = ({ Icon, label, value, color, styles }) => (
   <Card style={styles.statCard}>
     <View style={[styles.iconBadge, { backgroundColor: `${color}1A` }]}>
       <Icon size={22} color={color} />
@@ -36,6 +26,8 @@ const StatCard = ({ Icon, label, value, color }) => (
 
 const PatientHomeScreen = () => {
   const navigation = useNavigation();
+  const { colors, typography, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
   const [userData, setUserData] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,10 +64,19 @@ const PatientHomeScreen = () => {
     ['approved', 'confirmed'].includes(appointment.status)
   ).length;
   const profileStarted = Boolean(userData?.selectedOption);
+  const statusStyles = {
+    pending: colors.warning,
+    confirmed: colors.success,
+    approved: colors.success,
+    rejected: colors.danger,
+    cancelled: colors.textMuted,
+    completed: colors.success,
+    missed: colors.warning,
+  };
 
   return (
     <Screen contentContainerStyle={styles.content} edges={['top']}>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Header subtitle={userData?.firstName ? `Welcome back, ${userData.firstName}` : 'Patient dashboard'} />
 
       {loading ? <LoadingState message="Loading your dashboard..." /> : null}
@@ -110,9 +111,10 @@ const PatientHomeScreen = () => {
           label="Profile"
           value={profileStarted ? 'Active' : 'Start'}
           color={colors.primary}
+          styles={styles}
         />
-        <StatCard Icon={CalendarDaysIcon} label="Approved" value={approvedCount} color={colors.success} />
-        <StatCard Icon={BellAlertIcon} label="Pending" value={pendingCount} color={colors.warning} />
+        <StatCard Icon={CalendarDaysIcon} label="Approved" value={approvedCount} color={colors.success} styles={styles} />
+        <StatCard Icon={BellAlertIcon} label="Pending" value={pendingCount} color={colors.warning} styles={styles} />
       </View>
 
       <Card>
@@ -173,14 +175,14 @@ const PatientHomeScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, typography) => StyleSheet.create({
   content: {
     paddingHorizontal: 0,
     paddingTop: 0,
   },
   heroCard: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
     gap: spacing.lg,
   },
   heroTopRow: {
@@ -205,13 +207,13 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     ...typography.caption,
-    color: colors.white,
+    color: colors.onBrand,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   heroTitle: {
     ...typography.heading,
-    color: colors.white,
+    color: colors.onBrand,
   },
   heroText: {
     ...typography.body,

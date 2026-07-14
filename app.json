@@ -25,6 +25,7 @@
       "permissions": [
         "INTERNET",
         "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
         "VIBRATE"
       ],
       "versionCode": 1
@@ -61,8 +62,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
+          "imageWidth": 260,
           "resizeMode": "contain",
-          "backgroundColor": "#2563EB"
+          "backgroundColor": "#F7FAF8"
         }
       ],
       "expo-web-browser",

@@ -1,0 +1,107 @@
+import React, { ReactNode } from 'react';
+import {
+  ActivityIndicator,
+  GestureResponderEvent,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
+import { radius, spacing, useTheme } from '../../theme';
+import type { ThemeColors } from '../../theme';
+
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+
+type ButtonProps = {
+  title?: string;
+  children?: ReactNode;
+  onPress?: (event: GestureResponderEvent) => void;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  leftIcon?: ReactNode;
+};
+
+const getVariants = (colors: ThemeColors) => ({
+  primary: {
+    button: { backgroundColor: colors.primary, borderColor: colors.primary },
+    text: { color: colors.background },
+  },
+  secondary: {
+    button: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
+    text: { color: colors.primary },
+  },
+  outline: {
+    button: { backgroundColor: 'transparent', borderColor: colors.border },
+    text: { color: colors.primary },
+  },
+  danger: {
+    button: { backgroundColor: colors.danger, borderColor: colors.danger },
+    text: { color: colors.white },
+  },
+  ghost: {
+    button: { backgroundColor: 'transparent', borderColor: 'transparent' },
+    text: { color: colors.primary },
+  },
+});
+
+const Button = ({
+  title,
+  children,
+  onPress,
+  variant = 'primary',
+  disabled = false,
+  loading = false,
+  style,
+  textStyle,
+  leftIcon,
+}: ButtonProps) => {
+  const { colors, typography } = useTheme();
+  const variants = getVariants(colors);
+  const selected = variants[variant] || variants.primary;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled || loading}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        selected.button,
+        (pressed || disabled) && styles.dimmed,
+        style,
+      ]}
+    >
+      {loading ? <ActivityIndicator color={selected.text.color} /> : leftIcon}
+      <Text style={[styles.text, typography.body, selected.text, textStyle]}>{children || title}</Text>
+    </Pressable>
+  );
+};
+
+const styles = StyleSheet.create({
+  button: {
+    minHeight: 48,
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  text: {
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  dimmed: {
+    opacity: 0.72,
+  },
+});
+
+export default Button;

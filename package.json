@@ -9,7 +9,8 @@
     "android": "expo run:android",
     "android:dev-client": "expo run:android --device",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -51,8 +52,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@types/react": "~19.2.0",
     "babel-preset-expo": "~56.0.0",
-    "tailwindcss": "3.3.2"
+    "tailwindcss": "3.3.2",
+    "typescript": "~5.9.2"
   },
   "private": true,
   "expo": {

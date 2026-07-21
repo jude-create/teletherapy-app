@@ -7,7 +7,7 @@ import {  SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from 'expo-status-bar';
 import { TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native';
-import LoadingOverlay from '../components/LoadingOverlay'; // Import the LoadingOverlay component
+import LoadingOverlay from '../components/LoadingOverlay'; 
 import { signIn } from '../services/auth';
 
 const TherapistLoginScreen = () => {
@@ -15,7 +15,7 @@ const TherapistLoginScreen = () => {
     const [email, setEmail] = useState("");
      const [password, setPassword] = useState("");
       const [errorMessage, setErrorMessage] = useState("");
-       const [loading, setLoading] = useState(false); // Add loading state
+       const [loading, setLoading] = useState(false); 
  
      React.useLayoutEffect(() => {
          navigation.setOptions({

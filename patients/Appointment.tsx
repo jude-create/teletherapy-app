@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { AppNavigationProp } from '../types/navigation';
 import { Button, Card, EmptyState, ErrorState, LoadingState, Screen } from '../components/ui';
@@ -62,19 +62,6 @@ const statusCopy: Record<string, { label: string; message: string; color: string
     color: colors.warning,
     backgroundColor: '#FFF6E5',
   },
-};
-
-const openSessionLink = async (sessionLink: string | undefined, setErrorMessage: (message: string) => void) => {
-  if (!sessionLink) {
-    setErrorMessage('Your therapist has not added a video session link yet.');
-    return;
-  }
-
-  try {
-    await Linking.openURL(sessionLink);
-  } catch (error) {
-    setErrorMessage('We could not open this session link.');
-  }
 };
 
 const canChangeAppointment = (status?: string) => ['pending', 'approved', 'confirmed'].includes(status || '');
@@ -213,7 +200,7 @@ export default function Appointment() {
           updating={updatingId === appointment.id}
           onCancel={() => cancelAppointment(appointment.id)}
           onMessage={() => navigation.navigate('SessionMessages', { appointment })}
-          onJoinSession={() => openSessionLink(appointment.sessionLink, setErrorMessage)}
+          onJoinSession={() => navigation.navigate('VideoSession', { appointment })}
           onReschedule={() => rescheduleAppointment(appointment)}
         />
       ))}

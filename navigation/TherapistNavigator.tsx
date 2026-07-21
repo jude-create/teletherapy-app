@@ -9,6 +9,7 @@ import {
 } from 'react-native-heroicons/solid';
 import TherapistHomeScreen from '../screens/TherapistHomeScreen';
 import SessionMessages from '../screens/SessionMessages';
+import VideoSession from '../screens/VideoSession';
 import Clients from '../therapist/Clients';
 import Messages from '../therapist/Messages';
 import Questions from '../therapist/Questions';
@@ -40,6 +41,7 @@ const TherapistNavigator = () => (
     <Stack.Screen name="Questions" component={Questions} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     <Stack.Screen name="SessionMessages" component={SessionMessages} />
+    <Stack.Screen name="VideoSession" component={VideoSession} />
   </Stack.Navigator>
 );
 

@@ -22,11 +22,21 @@ Teletherapy App is an Expo React Native mobile app for connecting patients with 
 
 ## Video Demo
 
-Demo video link can be added here.
+https://youtube.com/shorts/WO773uG4O4s?feature=share,
+
+## Github
+
+https://github.com/jude-create/teletherapy-app
+
 
 ## Android Build
 
-Expo build link can be added here.
+https://expo.dev/accounts/jude_create/projects/teletherapy-app/builds/1712c648-ea3b-415d-988f-775d28be1854
+
+
+## Portfolio 
+
+https://ijudecreates.vercel.app/
 
 ## Screenshots
 

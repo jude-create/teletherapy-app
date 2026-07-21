@@ -10,6 +10,7 @@ import {
 import PatientHomeScreen from '../screens/PatientHomeScreen';
 import SessionMessages from '../screens/SessionMessages';
 import SafetySupportScreen from '../screens/SafetySupportScreen';
+import VideoSession from '../screens/VideoSession';
 import Appointment from '../patients/Appointment';
 import Notifications from '../patients/Notifications';
 import Profile from '../patients/Profile';
@@ -41,6 +42,7 @@ const PatientNavigator = () => (
     <Stack.Screen name="Book" component={BookAppointment} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     <Stack.Screen name="SessionMessages" component={SessionMessages} />
+    <Stack.Screen name="VideoSession" component={VideoSession} />
     <Stack.Screen name="SafetySupport" component={SafetySupportScreen} />
   </Stack.Navigator>
 );

@@ -49,6 +49,11 @@ export type PatientStackParamList = {
         recipientName?: string;
       }
     | undefined;
+  VideoSession:
+    | {
+        appointment?: Appointment;
+      }
+    | undefined;
   SafetySupport: undefined;
 };
 
@@ -65,6 +70,11 @@ export type TherapistStackParamList = {
         sessionId?: string;
         recipientId?: string;
         recipientName?: string;
+      }
+    | undefined;
+  VideoSession:
+    | {
+        appointment?: Appointment;
       }
     | undefined;
 };

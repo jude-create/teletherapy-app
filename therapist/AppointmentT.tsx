@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { AppNavigationProp } from '../types/navigation';
 import { Button, Card, EmptyState, ErrorState, Input, LoadingState, Screen } from '../components/ui';
@@ -69,19 +69,6 @@ const AppointmentT = () => {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save session link.');
     } finally {
       setUpdatingId('');
-    }
-  };
-
-  const openSessionLink = async (sessionLink?: string) => {
-    if (!sessionLink) {
-      setErrorMessage('Add and save a video session link first.');
-      return;
-    }
-
-    try {
-      await Linking.openURL(sessionLink);
-    } catch (error) {
-      setErrorMessage('We could not open this session link.');
     }
   };
 
@@ -175,7 +162,14 @@ const AppointmentT = () => {
                     <Button
                       title="Join"
                       variant="outline"
-                      onPress={() => openSessionLink(request.sessionLink || sessionLinks[request.id])}
+                      onPress={() =>
+                        navigation.navigate('VideoSession', {
+                          appointment: {
+                            ...request,
+                            sessionLink: request.sessionLink || sessionLinks[request.id],
+                          },
+                        })
+                      }
                       disabled={!(request.sessionLink || sessionLinks[request.id])}
                       style={styles.requestButton}
                     />
